@@ -21,6 +21,13 @@ export async function GET() {
             // Test a simple query
             await prisma.$queryRaw`SELECT 1`;
             results.databaseStatus = "CONNECTED";
+
+            // Check for master user
+            const masterUser = await prisma.user.findUnique({
+                where: { email: 'stdmexico@me.com' }
+            });
+            (results as any).masterUserExists = !!masterUser;
+            (results as any).totalUsers = await prisma.user.count();
         } catch (dbError: any) {
             results.databaseStatus = "FAILED";
             results.error = dbError.message;
