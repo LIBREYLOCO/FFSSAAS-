@@ -29,7 +29,7 @@ const navItems = [
     { name: "Previsión", href: "/prevision", icon: HeartHandshake },
     { name: "Vendedores", href: "/vendedores", icon: TrendingUp },
     { name: "Veterinarias", href: "/veterinarias", icon: MapPin },
-    { name: "Configuración", href: "/settings", icon: Settings },
+    { name: "Configuración", href: "/config", icon: Settings },
 ];
 
 export default function Sidebar() {
