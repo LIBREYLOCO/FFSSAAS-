@@ -25,12 +25,7 @@ export async function POST(request: Request) {
         });
 
         return response;
-    } catch (error: any) {
-        console.error("Login error details:", error);
-        return NextResponse.json({
-            error: "Auth error",
-            details: error.message,
-            stack: error.stack
-        }, { status: 500 });
+    } catch (error) {
+        return NextResponse.json({ error: "Auth error" }, { status: 500 });
     }
 }
