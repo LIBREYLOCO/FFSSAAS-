@@ -26,12 +26,7 @@ export async function POST(request: Request) {
 
         return response;
     } catch (error: any) {
-        console.error("Auth error details:", error);
-        return NextResponse.json({
-            error: "Auth error",
-            message: error.message,
-            stack: error.stack,
-            db_url_set: !!process.env.DATABASE_URL
-        }, { status: 500 });
+        console.error("Auth error:", error);
+        return NextResponse.json({ error: "Auth error" }, { status: 500 });
     }
 }
