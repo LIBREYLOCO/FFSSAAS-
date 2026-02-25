@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
     LayoutDashboard,
     Users,
@@ -11,7 +11,8 @@ import {
     MapPin,
     Settings,
     Menu,
-    X
+    X,
+    LogOut
 } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -34,7 +35,13 @@ const navItems = [
 
 export default function Sidebar() {
     const pathname = usePathname();
+    const router = useRouter();
     const [isOpen, setIsOpen] = useState(true);
+
+    const handleLogout = async () => {
+        await fetch("/api/auth/logout", { method: "POST" });
+        router.push("/login");
+    };
 
     return (
         <div className={cn(
@@ -116,11 +123,18 @@ export default function Sidebar() {
                         </div>
                     </div>
                     {isOpen && (
-                        <div className="flex flex-col">
+                        <div className="flex flex-col flex-1">
                             <span className="text-sm font-semibold">Usuario Demo</span>
                             <span className="text-xs text-slate-500">Administrador</span>
                         </div>
                     )}
+                    <button
+                        onClick={handleLogout}
+                        className="p-2 text-slate-500 hover:text-red-400 transition-colors"
+                        title="Cerrar Sesión"
+                    >
+                        <LogOut size={18} />
+                    </button>
                 </div>
             </div>
         </div>
