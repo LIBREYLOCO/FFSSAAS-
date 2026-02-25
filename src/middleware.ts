@@ -3,9 +3,10 @@ import { NextResponse, NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
     const session = request.cookies.get('aura_session');
 
-    // Allow /login and /api/auth/login
+    // Allow /login, /api/auth/login, and /api/debug
     if (request.nextUrl.pathname.startsWith('/login') ||
         request.nextUrl.pathname.startsWith('/api/auth/login') ||
+        request.nextUrl.pathname.startsWith('/api/debug') ||
         request.nextUrl.pathname.startsWith('/_next') ||
         request.nextUrl.pathname.includes('.')) {
         return NextResponse.next();
