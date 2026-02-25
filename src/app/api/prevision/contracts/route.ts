@@ -30,7 +30,8 @@ export async function POST(request: Request) {
         const plan = await prisma.previsionPlan.findUnique({ where: { id: planId } });
         if (!plan) return NextResponse.json({ error: "Plan not found" }, { status: 404 });
 
-        const remainingAmount = plan.price - downPayment;
+        const planPrice = Number(plan.price);
+        const remainingAmount = planPrice - downPayment;
         const installmentAmount = remainingAmount / plan.installmentsCount;
 
         const contract = await prisma.previsionContract.create({
