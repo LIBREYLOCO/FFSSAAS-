@@ -28,8 +28,8 @@ export async function POST(request: Request) {
         });
 
         // Check if fully paid
-        const totalPaid = contract.payments.reduce((acc, p) => acc + p.amount, 0) + amount;
-        if (totalPaid >= contract.plan.price) {
+        const totalPaid = contract.payments.reduce((acc, p) => acc + Number(p.amount), 0) + amount;
+        if (totalPaid >= Number(contract.plan.price)) {
             await prisma.previsionContract.update({
                 where: { id: contractId },
                 data: { status: "COMPLETED" }
