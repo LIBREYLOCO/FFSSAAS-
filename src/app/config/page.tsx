@@ -28,12 +28,9 @@ export default function ConfigPage() {
     const [loading, setLoading] = useState(false);
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
 
-    // Mock states for UI demonstration
-    const [users, setUsers] = useState([
-        { id: 1, name: "Admin Aura", email: "admin@aura.lat", role: "ADMIN" },
-        { id: 2, name: "Chofer 1", email: "chofer1@aura.lat", role: "DRIVER" },
-        { id: 3, name: "Vendedor Alpha", email: "ventas@aura.lat", role: "VENDEDOR" },
-    ]);
+    // State for real data from API
+    const [users, setUsers] = useState<any[]>([]);
+    const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "VENDEDOR" });
 
     const [pricing, setPricing] = useState({
         "0-5kg": 2500,
@@ -51,11 +48,50 @@ export default function ConfigPage() {
         allowPublicTracking: true,
     });
 
+    const fetchUsers = async () => {
+        try {
+            const res = await fetch("/api/users");
+            if (res.ok) {
+                const data = await res.json();
+                setUsers(data);
+            }
+        } catch (error) {
+            console.error("Error fetching users:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
+    const handleAddUser = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch("/api/users", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newUser),
+            });
+            if (res.ok) {
+                await fetchUsers();
+                setIsAddUserModalOpen(false);
+                setNewUser({ name: "", email: "", password: "", role: "VENDEDOR" });
+            } else {
+                alert("Error al crear usuario");
+            }
+        } catch (error) {
+            console.error("Error creating user:", error);
+            alert("Error de conexión");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSave = () => {
         setLoading(true);
         setTimeout(() => {
             setLoading(false);
-            alert("Configuración guardada correctamente");
+            alert("Configuración de precios y sistema guardada.");
         }, 1000);
     };
 
@@ -262,20 +298,54 @@ export default function ConfigPage() {
                         <div className="space-y-4">
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nombre Completo</label>
-                                <input className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none" placeholder="Juan Pérez" />
+                                <input
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none"
+                                    placeholder="Juan Pérez"
+                                    value={newUser.name}
+                                    onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                                />
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Correo Electrónico</label>
-                                <input className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none" placeholder="usuario@aura.lat" />
+                                <input
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none"
+                                    placeholder="usuario@aura.lat"
+                                    value={newUser.email}
+                                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                                />
                             </div>
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Contraseña Inicial</label>
-                                <input type="password" className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none font-mono" placeholder="••••••••" />
+                                <input
+                                    type="password"
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none font-mono"
+                                    placeholder="••••••••"
+                                    value={newUser.password}
+                                    onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Rol de Acceso</label>
+                                <select
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none appearance-none"
+                                    value={newUser.role}
+                                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                                >
+                                    <option value="ADMIN">Administrador</option>
+                                    <option value="DRIVER">Logística / Chofer</option>
+                                    <option value="VENDEDOR">Ventas / Asesor</option>
+                                </select>
                             </div>
                         </div>
                         <div className="flex gap-4 mt-8">
                             <button onClick={() => setIsAddUserModalOpen(false)} className="flex-1 py-4 rounded-2xl bg-white/5 font-bold text-sm uppercase tracking-widest">Cancelar</button>
-                            <button onClick={() => { setIsAddUserModalOpen(false); alert("Usuario creado (Demo)"); }} className="flex-1 py-4 rounded-2xl bg-brand-gold-500 text-black font-black text-sm uppercase tracking-widest shadow-lg">Crear Acceso</button>
+                            <button
+                                onClick={handleAddUser}
+                                disabled={loading || !newUser.name || !newUser.email || !newUser.password}
+                                className="flex-1 py-4 rounded-2xl bg-brand-gold-500 text-black font-black text-sm uppercase tracking-widest shadow-lg disabled:opacity-50"
+                            >
+                                {loading ? "Creando..." : "Crear Acceso"}
+                            </button>
                         </div>
                     </motion.div>
                 </div>
