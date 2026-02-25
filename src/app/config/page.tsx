@@ -14,7 +14,7 @@ import {
     Palette,
     Bell
 } from "lucide-react";
-import { toast } from "sonner"; // Assuming sonner or similar is available or I can use a simpler alert
+// import { toast } from "sonner"; // Removed as it is not in package.json
 
 const TABS = [
     { id: "users", label: "Usuarios & Roles", icon: Users },
@@ -90,8 +90,8 @@ export default function ConfigPage() {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-sm font-bold transition-all ${isActive
-                                            ? "bg-brand-gold-500 text-black shadow-[0_0_20px_rgba(212,175,55,0.2)]"
-                                            : "text-slate-400 hover:text-white hover:bg-white/5"
+                                        ? "bg-brand-gold-500 text-black shadow-[0_0_20px_rgba(212,175,55,0.2)]"
+                                        : "text-slate-400 hover:text-white hover:bg-white/5"
                                         }`}
                                 >
                                     <Icon size={20} />
@@ -147,7 +147,7 @@ export default function ConfigPage() {
                                                 </div>
                                                 <div className="flex items-center gap-4">
                                                     <span className={`text-[10px] font-black px-3 py-1 rounded-full ${user.role === 'ADMIN' ? 'bg-brand-gold-500/20 text-brand-gold-500' :
-                                                            user.role === 'DRIVER' ? 'bg-blue-500/20 text-blue-400' : 'bg-emerald-500/20 text-emerald-400'
+                                                        user.role === 'DRIVER' ? 'bg-blue-500/20 text-blue-400' : 'bg-emerald-500/20 text-emerald-400'
                                                         }`}>
                                                         {user.role}
                                                     </span>
