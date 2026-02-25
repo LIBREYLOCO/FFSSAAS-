@@ -13,9 +13,14 @@ export default function VeterinariasPage() {
     const fetchVeterinaries = () => {
         setLoading(true);
         fetch("/api/veterinarias")
-            .then(res => res.json())
+            .then(res => res.ok ? res.json() : [])
             .then(data => {
-                setVeterinaries(data);
+                setVeterinaries(Array.isArray(data) ? data : []);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Fetch veterinaries error:", err);
+                setVeterinaries([]);
                 setLoading(false);
             });
     };

@@ -13,9 +13,14 @@ export default function VendedoresPage() {
     const fetchSalespeople = () => {
         setLoading(true);
         fetch("/api/vendedores")
-            .then(res => res.json())
+            .then(res => res.ok ? res.json() : [])
             .then(data => {
-                setSalespeople(data);
+                setSalespeople(Array.isArray(data) ? data : []);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Fetch salespeople error:", err);
+                setSalespeople([]);
                 setLoading(false);
             });
     };

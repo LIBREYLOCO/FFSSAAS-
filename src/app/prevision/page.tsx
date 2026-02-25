@@ -17,9 +17,14 @@ export default function PrevisionPage() {
     const fetchContracts = () => {
         setLoading(true);
         fetch("/api/prevision/contracts")
-            .then(res => res.json())
+            .then(res => res.ok ? res.json() : [])
             .then(data => {
-                setContracts(data);
+                setContracts(Array.isArray(data) ? data : []);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Fetch contracts error:", err);
+                setContracts([]);
                 setLoading(false);
             });
     };

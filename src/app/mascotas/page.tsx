@@ -14,9 +14,14 @@ export default function MascotasPage() {
     const fetchPets = () => {
         setLoading(true);
         fetch("/api/pets")
-            .then(res => res.json())
+            .then(res => res.ok ? res.json() : [])
             .then(data => {
-                setPets(data);
+                setPets(Array.isArray(data) ? data : []);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Fetch pets error:", err);
+                setPets([]);
                 setLoading(false);
             });
     };
@@ -25,11 +30,11 @@ export default function MascotasPage() {
         fetchPets();
     }, []);
 
-    const filteredPets = pets.filter(pet =>
-        pet.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        pet.owner?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        pet.species.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredPets = Array.isArray(pets) ? pets.filter(pet =>
+        pet.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        pet.owner?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        pet.species?.toLowerCase().includes(searchQuery.toLowerCase())
+    ) : [];
 
     return (
         <div className="space-y-8">

@@ -23,9 +23,14 @@ export default function LogisticsMap() {
         import("leaflet").then((leaflet) => {
             setL(leaflet);
             fetch("/api/mapa")
-                .then(res => res.json())
+                .then(res => res.ok ? res.json() : null)
                 .then(d => {
-                    setData(d);
+                    setData(d || { clinics: [], activeOrders: [] });
+                    setLoading(false);
+                })
+                .catch(err => {
+                    console.error("Fetch mapa error:", err);
+                    setData({ clinics: [], activeOrders: [] });
                     setLoading(false);
                 });
         });

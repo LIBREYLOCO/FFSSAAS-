@@ -14,12 +14,13 @@ export default function ClientesPage() {
     const fetchOwners = () => {
         setLoading(true);
         fetch("/api/owners")
-            .then(res => res.json())
+            .then(res => res.ok ? res.json() : [])
             .then(data => {
                 setOwners(Array.isArray(data) ? data : []);
                 setLoading(false);
             })
-            .catch(() => {
+            .catch(err => {
+                console.error("Fetch owners error:", err);
                 setOwners([]);
                 setLoading(false);
             });
