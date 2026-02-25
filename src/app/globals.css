@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-gold-100: #f7e7bc;
+  --color-brand-gold-500: #c5a059;
+  --color-brand-gold-600: #b08d48;
+  --color-brand-gold-700: #8f7239;
+
+  --color-accent-500: #e6c98c;
+
+  --color-bg-deep: #1c2c3d;
+  --color-surface: rgba(28, 44, 61, 0.7);
+}
+
+:root {
+  --background: #1c2c3d;
+  --foreground: #e6c5a0;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+@layer components {
+  .glass-card {
+    background: rgba(30, 41, 59, 0.4);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  .aura-gradient {
+    background: linear-gradient(135deg, #c5a059 0%, #e6c98c 50%, #b08d48 100%);
+  }
+
+  .btn-primary {
+    background-color: #b08d48;
+    color: #1c2c3d;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+    box-shadow: 0 0 20px rgba(197, 160, 89, 0.3);
+    cursor: pointer;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-primary:hover {
+    background-color: #8f7239;
+    transform: scale(1.05);
+  }
+
+  .btn-primary:active {
+    transform: scale(0.95);
+  }
+}

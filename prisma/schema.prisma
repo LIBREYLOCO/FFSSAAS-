@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// =========================================================
+// MÓDULO 1: ACTORES (Directorio)
+// =========================================================
+
+model Owner {
+  id            String              @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  source        String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  pets          Pet[]
+  contracts     PrevisionContract[]
+  serviceOrders ServiceOrder[]
+}
+
+model VeterinaryClinic {
+  id           String              @id @default(cuid())
+  businessName String
+  taxId        String?
+  address      String?
+  latitude     Float?
+  longitude    Float?
+  contactName  String?
+  phone        String?
+  priceListId  Int                 @default(1)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  referrals    PrevisionContract[]
+  serviceOrders ServiceOrder[]
+}
+
+// =========================================================
+// MÓDULO 2: INVENTARIO BIOLÓGICO (Mascotas)
+// =========================================================
+
+model Pet {
+  id        String    @id @default(cuid())
+  name      String
+  species   String
+  breed     String?
+  weightKg  Decimal   // Removed @db.Decimal for SQLite compatibility
+  color     String?
+  birthDate DateTime?
+  deathDate DateTime?
+  ownerId   String?
+  clinicId  String?
+  photoUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  owner    Owner?         @relation(fields: [ownerId], references: [id])
+  services ServiceOrder[]
+}
+
+// =========================================================
+// MÓDULO 3: OPERACIÓN (El Servicio / Orden de Trabajo)
+// =========================================================
+
+model ServiceOrder {
+  id          String      @id @default(cuid())
+  folio       String      @unique
+  ownerId     String?
+  clinicId    String?
+  petId       String
+  contractId  String?
+  serviceType String
+  urnId       String?
+  status      String      @default("PENDING_PICKUP") 
+  qrToken     String      @unique
+  totalCost   Decimal
+  balanceDue  Decimal
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  owner        Owner?              @relation(fields: [ownerId], references: [id])
+  clinic       VeterinaryClinic?   @relation(fields: [clinicId], references: [id])
+  pet          Pet                 @relation(fields: [petId], references: [id])
+  contract     PrevisionContract?  @relation(fields: [contractId], references: [id])
+  products     ServiceOrderProduct[]
+  trackingLogs TrackingLog[]
+  route        Route?              @relation(fields: [routeId], references: [id])
+  routeId      String?
+}
+
+// =========================================================
+// MÓDULO 4: LOGÍSTICA (App de Choferes)
+// =========================================================
+
+model Driver {
+  id           String  @id @default(cuid())
+  name         String
+  licensePlate String?
+  phone        String?
+  isActive     Boolean @default(true)
+  routes       Route[]
+}
+
+model Route {
+  id       String         @id @default(cuid())
+  driverId String
+  date     DateTime
+  status   String
+  driver   Driver         @relation(fields: [driverId], references: [id])
+  orders   ServiceOrder[]
+}
+
+// =========================================================
+// MÓDULO 5: TRAZABILIDAD (Bitácora de Eventos)
+// =========================================================
+
+model TrackingLog {
+  id             Int          @id @default(autoincrement())
+  serviceOrderId String
+  event          String
+  timestamp      DateTime     @default(now())
+  scannedBy      String
+  locationLat    Float?
+  locationLng    Float?
+  evidenceUrl    String?
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id])
+}
+
+// =========================================================
+// MÓDULO 6: PREVISIÓN Y VENTAS
+// =========================================================
+
+model PrevisionPlan {
+  id                String              @id @default(cuid())
+  name              String
+  description       String?
+  price             Decimal
+  installmentsCount Int
+  createdAt         DateTime            @default(now())
+  contracts         PrevisionContract[]
+}
+
+model PrevisionContract {
+  id                String    @id @default(cuid())
+  ownerId           String
+  planId            String
+  startDate         DateTime  @default(now())
+  status            String    @default("ACTIVE")
+  downPayment       Decimal
+  installmentAmount Decimal
+  salespersonId     String?
+  clinicReferralId  String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  payments          Payment[]
+  clinicReferral    VeterinaryClinic? @relation(fields: [clinicReferralId], references: [id])
+  salesperson       Salesperson?      @relation(fields: [salespersonId], references: [id])
+  plan              PrevisionPlan     @relation(fields: [planId], references: [id])
+  owner             Owner             @relation(fields: [ownerId], references: [id])
+  serviceOrders     ServiceOrder[]
+}
+
+model Payment {
+  id          String            @id @default(cuid())
+  contractId  String
+  amount      Decimal
+  paymentDate DateTime          @default(now())
+  type        String
+  status      String            @default("PENDING")
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  contract    PrevisionContract @relation(fields: [contractId], references: [id])
+}
+
+model Salesperson {
+  id             String              @id @default(cuid())
+  name           String
+  level          String
+  commissionRate Decimal
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  contracts      PrevisionContract[]
+}
+
+// =========================================================
+// MÓDULO 7: PRODUCTOS (Urnas y Joyería)
+// =========================================================
+
+model Product {
+  id            String    @id @default(cuid())
+  sku           String    @unique
+  name          String
+  description   String?
+  price         Decimal
+  stock         Int       @default(0)
+  category      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  serviceOrders ServiceOrderProduct[]
+}
+
+model ServiceOrderProduct {
+  id             String       @id @default(cuid())
+  serviceOrderId String
+  productId      String
+  quantity       Int          @default(1)
+  priceAtTime    Decimal
+  serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id])
+  product        Product      @relation(fields: [productId], references: [id])
+}
