@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const [name, setName] = useState("");
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
@@ -19,7 +19,7 @@ export default function LoginPage() {
             const res = await fetch("/api/auth/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
+                body: JSON.stringify({ email, name }),
             });
 
             if (res.ok) {
@@ -108,15 +108,15 @@ export default function LoginPage() {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Contraseña</label>
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Nombre Completo</label>
                                 <div className="relative group">
-                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-brand-gold-500 transition-colors" size={18} />
+                                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-brand-gold-500 transition-colors" size={18} />
                                     <input
-                                        type="password"
+                                        type="text"
                                         required
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        placeholder="••••••••"
+                                        value={name}
+                                        onChange={(e) => setName(e.target.value)}
+                                        placeholder="Ej. Juan Pérez"
                                         className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50 focus:bg-white/10 transition-all placeholder:text-slate-600"
                                     />
                                 </div>
@@ -130,15 +130,7 @@ export default function LoginPage() {
                                 {loading ? "Iniciando..." : <span>Entrar al Sistema <ArrowRight size={16} className="inline ml-1" /></span>}
                             </button>
 
-                            <div className="text-center">
-                                <button
-                                    type="button"
-                                    onClick={() => alert("Función de recuperación: Por favor contacte con stdmexico@me.com para resetear su acceso.")}
-                                    className="text-[10px] font-black text-brand-gold-500/50 hover:text-brand-gold-500 uppercase tracking-widest transition-colors"
-                                >
-                                    ¿Olvidaste tu contraseña?
-                                </button>
-                            </div>
+
                         </form>
                     </div>
 

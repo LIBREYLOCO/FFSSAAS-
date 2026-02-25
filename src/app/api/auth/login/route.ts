@@ -3,16 +3,29 @@ import prisma from "@/lib/db";
 
 export async function POST(request: Request) {
     try {
-        const { email, password } = await request.json();
+        const { email, name } = await request.json();
 
-        // En producción: Hashear el password y comparar
-        const user = await prisma.user.findUnique({
+        // 1. Registrar el acceso en la bitácora
+        await prisma.accessLog.create({
+            data: { name, email }
+        });
+
+        // 2. Buscar o crear el usuario para la sesión
+        let user = await prisma.user.findUnique({
             where: { email }
         });
 
-        if (!user || user.password !== password) {
-            return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+        if (!user) {
+            user = await prisma.user.create({
+                data: {
+                    name,
+                    email,
+                    password: "SYSTEM_MANAGED", // Placeholder ya que no se usará
+                    role: "VENDEDOR"
+                }
+            });
         }
+
 
         const response = NextResponse.json({ success: true, user: { name: user.name, role: user.role } });
 

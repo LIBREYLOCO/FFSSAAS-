@@ -235,3 +235,10 @@ model SystemConfig {
   group     String   @default("GENERAL") // PRICING, SYSTEM, BRANDING
   updatedAt DateTime @updatedAt
 }
+
+model AccessLog {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  timestamp DateTime @default(now())
+}
