@@ -125,10 +125,20 @@ export default function LoginPage() {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full flex items-center justify-center gap-2 py-4 bg-brand-gold-500 hover:bg-brand-gold-400 text-black font-black rounded-2xl transition-all shadow-[0_8px_32px_rgba(212,175,55,0.3)] hover:shadow-[0_12px_48px_rgba(212,175,55,0.4)] hover:-translate-y-0.5 disabled:opacity-50 disabled:translate-y-0 uppercase tracking-widest text-xs"
+                                className="w-full flex items-center justify-center gap-2 py-4 bg-brand-gold-500 hover:bg-brand-gold-400 text-black font-black rounded-2xl transition-all shadow-[0_8px_32px_rgba(212,175,55,0.3)] hover:shadow-[0_12px_48_rgba(212,175,55,0.4)] hover:-translate-y-0.5 disabled:opacity-50 disabled:translate-y-0 uppercase tracking-widest text-xs"
                             >
                                 {loading ? "Iniciando..." : <span>Entrar al Sistema <ArrowRight size={16} className="inline ml-1" /></span>}
                             </button>
+
+                            <div className="text-center">
+                                <button
+                                    type="button"
+                                    onClick={() => alert("Función de recuperación: Por favor contacte con stdmexico@me.com para resetear su acceso.")}
+                                    className="text-[10px] font-black text-brand-gold-500/50 hover:text-brand-gold-500 uppercase tracking-widest transition-colors"
+                                >
+                                    ¿Olvidaste tu contraseña?
+                                </button>
+                            </div>
                         </form>
                     </div>
 

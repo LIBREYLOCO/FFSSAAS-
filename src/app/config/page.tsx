@@ -26,6 +26,7 @@ const TABS = [
 export default function ConfigPage() {
     const [activeTab, setActiveTab] = useState("users");
     const [loading, setLoading] = useState(false);
+    const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
 
     // Mock states for UI demonstration
     const [users, setUsers] = useState([
@@ -128,7 +129,10 @@ export default function ConfigPage() {
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between mb-8">
                                         <h2 className="text-xl font-bold">Gestión de Personal</h2>
-                                        <button className="text-[10px] font-black bg-white/5 text-slate-300 px-4 py-2 rounded-xl hover:text-white transition-colors border border-white/5 flex items-center gap-2 uppercase tracking-widest">
+                                        <button
+                                            onClick={() => setIsAddUserModalOpen(true)}
+                                            className="text-[10px] font-black bg-white/5 text-slate-300 px-4 py-2 rounded-xl hover:text-white transition-colors border border-white/5 flex items-center gap-2 uppercase tracking-widest"
+                                        >
                                             <UserPlus size={14} /> Añadir Usuario
                                         </button>
                                     </div>
@@ -246,6 +250,36 @@ export default function ConfigPage() {
                     </AnimatePresence>
                 </main>
             </div>
+            {/* Simple Add User Modal Placeholder */}
+            {isAddUserModalOpen && (
+                <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="glass-card p-8 rounded-[48px] border border-white/10 w-full max-w-md shadow-2xl"
+                    >
+                        <h2 className="text-2xl font-bold mb-6">Nuevo Usuario</h2>
+                        <div className="space-y-4">
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nombre Completo</label>
+                                <input className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none" placeholder="Juan Pérez" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Correo Electrónico</label>
+                                <input className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none" placeholder="usuario@aura.lat" />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Contraseña Inicial</label>
+                                <input type="password" className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none font-mono" placeholder="••••••••" />
+                            </div>
+                        </div>
+                        <div className="flex gap-4 mt-8">
+                            <button onClick={() => setIsAddUserModalOpen(false)} className="flex-1 py-4 rounded-2xl bg-white/5 font-bold text-sm uppercase tracking-widest">Cancelar</button>
+                            <button onClick={() => { setIsAddUserModalOpen(false); alert("Usuario creado (Demo)"); }} className="flex-1 py-4 rounded-2xl bg-brand-gold-500 text-black font-black text-sm uppercase tracking-widest shadow-lg">Crear Acceso</button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
         </div>
     );
 }
