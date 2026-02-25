@@ -1,14 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 
 const prismaClientSingleton = () => {
-  const dbPath = require('path').join(process.cwd(), 'prisma', 'dev.db');
-  return new PrismaClient({
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL || `file:${dbPath}`
-      }
-    }
-  })
+  return new PrismaClient()
 }
 
 declare global {
