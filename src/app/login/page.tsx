@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Lock, Mail, ArrowRight, ShieldCheck, Heart } from "lucide-react";
+import { Users, Mail, ArrowRight, ShieldCheck, Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
