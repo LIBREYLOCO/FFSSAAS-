@@ -3,7 +3,7 @@ import { NextResponse, NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
     const session = request.cookies.get('aura_session');
 
-    // Allow /login and /api/auth/login
+    // Allow /login, /api/auth/login, and assets
     if (request.nextUrl.pathname.startsWith('/login') ||
         request.nextUrl.pathname.startsWith('/api/auth/login') ||
         request.nextUrl.pathname.startsWith('/_next') ||
@@ -12,8 +12,8 @@ export function middleware(request: NextRequest) {
     }
 
     if (!session) {
-        const loginUrl = new URL('/login', request.url);
-        return NextResponse.redirect(loginUrl);
+        console.log("No session found, redirecting to /login from:", request.nextUrl.pathname);
+        return NextResponse.redirect(new URL('/login', request.url));
     }
 
     return NextResponse.next();

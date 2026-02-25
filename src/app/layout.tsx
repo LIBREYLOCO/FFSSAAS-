@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   description: "Software de gestión premium para servicios de cremación de mascotas.",
 };
 
-import Sidebar from "@/components/Sidebar";
+import SidebarWrapper from "@/components/SidebarWrapper";
 
 export default function RootLayout({
   children,
@@ -29,7 +29,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex h-screen overflow-hidden bg-bg-deep`}
       >
-        <Sidebar />
+        <SidebarWrapper />
         <main className="flex-1 h-screen overflow-y-auto p-8 relative">
           <div className="absolute top-0 right-0 w-96 h-96 aura-gradient blur-[120px] opacity-20 -z-10 pointer-events-none" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent-500 blur-[100px] opacity-10 -z-10 pointer-events-none" />
