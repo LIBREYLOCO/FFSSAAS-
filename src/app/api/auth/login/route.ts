@@ -40,11 +40,18 @@ export async function POST(request: Request) {
         return response;
     } catch (error: any) {
         console.error("Auth error details:", error);
+
+        let errorMessage = "Error en el servidor de autenticación";
+        if (error.message && error.message.includes("database string is invalid")) {
+            errorMessage = "Error de conexión: Configuración de base de datos inválida (Netlify Var)";
+        } else if (error.code === 'P1001') {
+            errorMessage = "No se pudo conectar a la base de datos de Supabase";
+        }
+
         return NextResponse.json({
             error: "Auth error",
-            message: error.message,
-            stack: error.stack,
-            db_url_set: !!process.env.DATABASE_URL
+            message: errorMessage,
+            details: error.message
         }, { status: 500 });
     }
 }

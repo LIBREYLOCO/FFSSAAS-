@@ -25,7 +25,8 @@ export default function LoginPage() {
             if (res.ok) {
                 router.push("/");
             } else {
-                alert("Credenciales incorrectas");
+                const data = await res.json();
+                alert(data.message || "Error al iniciar sesión. Por favor verifica los datos.");
             }
         } catch (error) {
             alert("Error al iniciar sesión");
