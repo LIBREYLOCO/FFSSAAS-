@@ -26,14 +26,7 @@ export async function POST(request: Request) {
 
         return response;
     } catch (error: any) {
-        const dbPath = require('path').join(process.cwd(), 'prisma', 'dev.db');
-        const fs = require('fs');
-        return NextResponse.json({
-            error: "Auth error",
-            message: error.message,
-            dbFileExists: fs.existsSync(dbPath),
-            dbPath: dbPath,
-            cwd: process.cwd()
-        }, { status: 500 });
+        console.error("Auth error:", error);
+        return NextResponse.json({ error: "Auth error" }, { status: 500 });
     }
 }
