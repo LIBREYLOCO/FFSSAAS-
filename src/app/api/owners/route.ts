@@ -45,19 +45,23 @@ export async function POST(request: Request) {
                         name: petName,
                         species: petSpecies || "Perro",
                         breed: petBreed,
+                        weightKg: 0,
                         ownerId: owner.id
                     }
                 });
 
                 // Create Immediate Service Order
+                const timestamp = Date.now();
                 await tx.serviceOrder.create({
                     data: {
-                        type: "IMMEDIATE",
-                        status: "PENDING",
-                        serviceDate: new Date(),
-                        price: 3500, // Default price for immediate
+                        folio: `SRV-${timestamp}`,
+                        serviceType: "IMMEDIATE",
+                        status: "PENDING_PICKUP",
+                        totalCost: 3500,
+                        balanceDue: 3500,
                         ownerId: owner.id,
-                        petId: pet.id
+                        petId: pet.id,
+                        qrToken: `QR-${timestamp}`
                     }
                 });
             } else if (serviceType === "PREVISION") {

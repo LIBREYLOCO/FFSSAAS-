@@ -14,7 +14,7 @@ export async function GET(
                 pets: {
                     include: {
                         services: {
-                            orderBy: { serviceDate: 'desc' },
+                            orderBy: { createdAt: 'desc' },
                             take: 5
                         }
                     }
@@ -39,7 +39,7 @@ export async function GET(
                             }
                         }
                     },
-                    orderBy: { serviceDate: 'desc' }
+                    orderBy: { createdAt: 'desc' }
                 }
             }
         });
