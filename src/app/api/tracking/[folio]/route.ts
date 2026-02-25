@@ -3,10 +3,10 @@ import prisma from "@/lib/db";
 
 export async function GET(
     request: Request,
-    { params }: { params: { folio: string } }
+    { params }: { params: Promise<{ folio: string }> }
 ) {
     try {
-        const { folio } = params;
+        const { folio } = await params;
 
         const order = await prisma.serviceOrder.findFirst({
             where: {

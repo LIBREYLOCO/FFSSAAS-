@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { motion } from "framer-motion";
 import {
     Dog,
@@ -25,13 +25,14 @@ const STATUS_STEPS = [
     { id: "DELIVERED", label: "Entregado", icon: Dog, color: "text-brand-gold-500" },
 ];
 
-export default function TrackingStatus({ params }: { params: { folio: string } }) {
+export default function TrackingStatus({ params }: { params: Promise<{ folio: string }> }) {
+    const { folio } = use(params);
     const [order, setOrder] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
     useEffect(() => {
-        fetch(`/api/tracking/${params.folio}`)
+        fetch(`/api/tracking/${folio}`)
             .then(res => res.json())
             .then(data => {
                 if (data.error) setError(data.error);
@@ -42,7 +43,7 @@ export default function TrackingStatus({ params }: { params: { folio: string } }
                 setError("Error al cargar el seguimiento");
                 setLoading(false);
             });
-    }, [params.folio]);
+    }, [folio]);
 
     if (loading) return (
         <div className="min-h-screen bg-black flex items-center justify-center text-brand-gold-500">
