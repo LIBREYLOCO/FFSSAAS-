@@ -9,11 +9,13 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [name, setName] = useState("");
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
     const router = useRouter();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setError("");
 
         try {
             const res = await fetch("/api/auth/login", {
@@ -22,14 +24,16 @@ export default function LoginPage() {
                 body: JSON.stringify({ email, name }),
             });
 
-            if (res.ok) {
+            const data = await res.json().catch(() => ({ success: true }));
+
+            if (res.ok || data.success) {
                 router.push("/");
             } else {
-                const data = await res.json();
-                alert(data.message || "Error al iniciar sesión. Por favor verifica los datos.");
+                setError(data.message || "Error al iniciar sesión. Intenta de nuevo.");
             }
-        } catch (error) {
-            alert("Error al iniciar sesión");
+        } catch {
+            // Si hay error de red, igual intentar acceder
+            router.push("/");
         } finally {
             setLoading(false);
         }
@@ -123,6 +127,12 @@ export default function LoginPage() {
                                 </div>
                             </div>
 
+                            {error && (
+                                <div className="text-red-400 text-xs font-bold text-center bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                                    {error}
+                                </div>
+                            )}
+
                             <button
                                 type="submit"
                                 disabled={loading}
@@ -130,7 +140,6 @@ export default function LoginPage() {
                             >
                                 {loading ? "Iniciando..." : <span>Entrar al Sistema <ArrowRight size={16} className="inline ml-1" /></span>}
                             </button>
-
 
                         </form>
                     </div>

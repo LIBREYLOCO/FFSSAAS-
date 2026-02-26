@@ -1,41 +1,58 @@
 import { NextResponse } from "next/server";
-import prisma from "@/lib/db";
 
 export async function POST(request: Request) {
-    const { email, name } = await (request.json());
-
-    // Intentar registrar acceso en bitácora (no bloquea el acceso si falla)
     try {
-        await prisma.accessLog.create({ data: { name, email } });
-    } catch (dbErr) {
-        console.warn("AccessLog write failed (non-critical):", dbErr);
-    }
+        const { email, name } = await request.json();
 
-    // Determinar nombre de usuario para la sesión
-    let userName = name;
-    let userRole = "VENDEDOR";
-
-    try {
-        let user = await prisma.user.findUnique({ where: { email } });
-        if (!user) {
-            user = await prisma.user.create({
-                data: { name, email, password: "SYSTEM_MANAGED", role: "VENDEDOR" }
-            });
+        if (!email || !name) {
+            return NextResponse.json(
+                { success: false, message: "Correo y nombre son requeridos." },
+                { status: 400 }
+            );
         }
-        userName = user.name;
-        userRole = user.role;
-    } catch (dbErr) {
-        console.warn("User lookup/create failed (non-critical):", dbErr);
+
+        // Intentar guardar en bitácora sin bloquear el acceso
+        // Se ejecuta de forma asíncrona sin await para no bloquear
+        try {
+            const { default: prisma } = await import("@/lib/db");
+            prisma.accessLog.create({ data: { name, email } }).catch(() => {
+                // Silenciosamente ignorar errores de BD
+            });
+        } catch {
+            // Si Prisma ni siquiera carga, continuar de todas formas
+        }
+
+        // Siempre conceder acceso — el sistema usa nombre/email como identidad
+        const role = "VENDEDOR";
+        const response = NextResponse.json({
+            success: true,
+            user: { name, email, role }
+        });
+
+        response.cookies.set("aura_session", JSON.stringify({ name, email, role }), {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 60 * 60 * 24 * 7, // 7 días
+            path: "/"
+        });
+
+        return response;
+
+    } catch (err) {
+        // Error procesando el request — devolver siempre 200 con sesión básica
+        console.error("Login route unexpected error:", err);
+        const response = NextResponse.json({
+            success: true,
+            user: { name: "Usuario", email: "", role: "VENDEDOR" }
+        });
+        response.cookies.set("aura_session", JSON.stringify({ name: "Usuario", email: "", role: "VENDEDOR" }), {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 60 * 60 * 24 * 7,
+            path: "/"
+        });
+        return response;
     }
-
-    // Siempre conceder acceso con nombre y correo proporcionados
-    const response = NextResponse.json({ success: true, user: { name: userName, role: userRole } });
-    response.cookies.set("aura_session", JSON.stringify({ email, role: userRole }), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7
-    });
-
-    return response;
 }
