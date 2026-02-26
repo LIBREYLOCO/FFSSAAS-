@@ -21,10 +21,12 @@ export default function RegisterContractModal({ isOpen, onClose, onSuccess }: Pr
     const [formData, setFormData] = useState({
         ownerId: "",
         planId: "",
+        templateId: "",
         salespersonId: "",
         downPayment: 0
     });
 
+    const [templates, setTemplates] = useState<any[]>([]);
     const [systemConfig, setSystemConfig] = useState<any>(null);
 
     useEffect(() => {
@@ -33,12 +35,20 @@ export default function RegisterContractModal({ isOpen, onClose, onSuccess }: Pr
                 fetch("/api/owners").then(res => res.json()),
                 fetch("/api/prevision/plans").then(res => res.json()),
                 fetch("/api/vendedores").then(res => res.json()),
-                fetch("/api/system-config").then(res => res.json())
-            ]).then(([ownersData, plansData, vendorsData, sysConfigData]) => {
+                fetch("/api/system-config").then(res => res.json()),
+                fetch("/api/templates").then(res => res.json())
+            ]).then(([ownersData, plansData, vendorsData, sysConfigData, templatesData]) => {
                 setOwners(ownersData);
                 setPlans(plansData);
                 setVendedores(vendorsData);
                 setSystemConfig(sysConfigData);
+
+                // Only show active PREVISION templates
+                const previsionTemplates = templatesData.filter((t: any) => t.isActive && t.category === "PREVISION");
+                setTemplates(previsionTemplates);
+                if (previsionTemplates.length > 0) {
+                    setFormData(prev => ({ ...prev, templateId: previsionTemplates[0].id }));
+                }
             });
         }
     }, [isOpen]);
@@ -69,6 +79,7 @@ export default function RegisterContractModal({ isOpen, onClose, onSuccess }: Pr
                 // Generar PDF
                 const selectedOwner = owners.find(o => o.id === formData.ownerId);
                 const selectedPlan = plans.find(p => p.id === formData.planId);
+                const selectedTemplate = templates.find(t => t.id === formData.templateId);
 
                 await generatePrevisionContractPDF({
                     owner: {
@@ -92,7 +103,8 @@ export default function RegisterContractModal({ isOpen, onClose, onSuccess }: Pr
                         legalName: systemConfig?.legalName || "",
                         legalRepresentative: systemConfig?.legalRepresentative || "",
                         contactPhone: systemConfig?.contactPhone || ""
-                    }
+                    },
+                    template: selectedTemplate // Pass the selected template to the generator
                 });
 
                 onSuccess();

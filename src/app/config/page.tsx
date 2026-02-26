@@ -12,7 +12,8 @@ import {
     MoreVertical,
     CheckCircle2,
     Palette,
-    Bell
+    Bell,
+    FileText
 } from "lucide-react";
 // import { toast } from "sonner"; // Removed as it is not in package.json
 
@@ -20,6 +21,7 @@ const TABS = [
     { id: "users", label: "Usuarios & Roles", icon: Users },
     { id: "pricing", label: "Precios & Tabuladores", icon: DollarSign },
     { id: "system", label: "Sistema & Marca", icon: Settings },
+    { id: "templates", label: "Plantillas de Contratos", icon: FileText },
     { id: "security", label: "Seguridad", icon: Shield },
 ];
 
@@ -316,6 +318,34 @@ export default function ConfigPage() {
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === "templates" && (
+                                <div className="space-y-8">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <div>
+                                            <h2 className="text-xl font-bold mb-2">Editor de Contratos</h2>
+                                            <p className="text-slate-500 text-xs text-balance">
+                                                Crea plantillas dinámicas usando variables mágicas que se llenarán solas al
+                                                momento de hacer una venta (ej. {"{{CLIENTE_NOMBRE}}"}).
+                                            </p>
+                                        </div>
+                                        <a href="/config/templates" className="btn-primary flex items-center gap-2 whitespace-nowrap">
+                                            <FileText size={18} /> Abrir Gestor de Plantillas
+                                        </a>
+                                    </div>
+                                    <div className="glass-card rounded-[32px] p-8 border border-white/5 bg-white/5 flex flex-col items-center justify-center min-h-[300px] text-center">
+                                        <FileText size={48} className="text-brand-gold-500 mb-4 opacity-50" />
+                                        <h3 className="font-bold text-lg mb-2">Módulo Avanzado</h3>
+                                        <p className="text-sm text-slate-400 max-w-sm mb-6">
+                                            El gestor de plantillas se abre en pantalla completa para que tengas espacio
+                                            suficiente para revisar la redacción legal de tus contratos.
+                                        </p>
+                                        <a href="/config/templates" className="text-brand-gold-500 font-bold text-sm tracking-widest uppercase hover:underline">
+                                            Ir al Editor →
+                                        </a>
                                     </div>
                                 </div>
                             )}

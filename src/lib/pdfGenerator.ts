@@ -21,6 +21,10 @@ interface ContractData {
         legalRepresentative: string;
         contactPhone: string;
     };
+    template?: {
+        name: string;
+        content: string;
+    };
 }
 
 export const generatePrevisionContractPDF = async (data: ContractData) => {
@@ -60,58 +64,81 @@ export const generatePrevisionContractPDF = async (data: ContractData) => {
     doc.text(`ID de Contrato: ${data.contract.id}`, marginX, 60);
     doc.text(`Fecha: ${new Date(data.contract.startDate).toLocaleDateString()}`, pageWidth - marginX - 40, 60);
 
-    // Declaraciones
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text("DECLARACIONES", marginX, 75);
+    // Si hay una plantilla dinámica seleccionada, usar su contenido en lugar del estático
+    if (data.template?.content) {
+        let dynamicContent = data.template.content;
 
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    const declaracionesText = `
+        // Reemplazar variables mágicas
+        dynamicContent = dynamicContent.replace(/{{CLIENTE_NOMBRE}}/g, data.owner.name);
+        dynamicContent = dynamicContent.replace(/{{CLIENTE_DIRECCION}}/g, data.owner.address || "No especificada");
+        dynamicContent = dynamicContent.replace(/{{PLAN_NOMBRE}}/g, data.plan.name);
+        dynamicContent = dynamicContent.replace(/{{PLAN_PRECIO}}/g, `$${data.plan.price.toLocaleString("en-US")} MXN`);
+        dynamicContent = dynamicContent.replace(/{{FECHA_ACTUAL}}/g, new Date(data.contract.startDate).toLocaleDateString());
+        dynamicContent = dynamicContent.replace(/{{EMPRESA_NOMBRE}}/g, data.system.legalName || "Aura Mascotas");
+        dynamicContent = dynamicContent.replace(/{{REPRESENTANTE}}/g, data.system.legalRepresentative || "Representante de Ventas");
+
+        // Quitar etiquetas HTML básicas para modo texto (simplificado)
+        const plainText = dynamicContent.replace(/<[^>]*>?/gm, '');
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        const splitDynamicText = doc.splitTextToSize(plainText, pageWidth - (marginX * 2));
+        doc.text(splitDynamicText, marginX, 75);
+
+    } else {
+        // Fallback al contrato estático si no hay plantilla (Legacy)
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text("DECLARACIONES", marginX, 75);
+
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        const declaracionesText = `
 De una parte, la empresa denominada ${data.system.legalName || "Aura Mascotas"}, representada en este acto por ${data.system.legalRepresentative || "su representante legal"}, a quien en lo sucesivo se le denominará "EL PRESTADOR".
 
 Y de otra parte, el/la C. ${data.owner.name}, con domicilio en ${data.owner.address || "Dato no proporcionado"}, a quien en lo sucesivo se le denominará "EL CONTRATANTE".
 
 Ambas partes acuerdan sujetarse a las siguientes cláusulas relacionadas con el plan de previsión funeraria para mascotas denominado "${data.plan.name}".
-    `.trim();
+        `.trim();
 
-    const splitDeclaraciones = doc.splitTextToSize(declaracionesText, pageWidth - (marginX * 2));
-    doc.text(splitDeclaraciones, marginX, 85);
+        const splitDeclaraciones = doc.splitTextToSize(declaracionesText, pageWidth - (marginX * 2));
+        doc.text(splitDeclaraciones, marginX, 85);
 
-    // Conceptos Economicos
-    const yEcon = 130;
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text("RESUMEN ECONÓMICO DEL PRESTADOR", marginX, yEcon);
+        // Conceptos Economicos
+        const yEcon = 130;
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text("RESUMEN ECONÓMICO DEL PRESTADOR", marginX, yEcon);
 
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Costo Total del Plan:`, marginX + 10, yEcon + 10);
-    doc.text(`$${data.plan.price.toLocaleString("en-US")} MXN`, marginX + 70, yEcon + 10);
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Costo Total del Plan:`, marginX + 10, yEcon + 10);
+        doc.text(`$${data.plan.price.toLocaleString("en-US")} MXN`, marginX + 70, yEcon + 10);
 
-    doc.text(`Pago Inicial (Enganche):`, marginX + 10, yEcon + 18);
-    doc.text(`$${data.contract.downPayment.toLocaleString("en-US")} MXN`, marginX + 70, yEcon + 18);
+        doc.text(`Pago Inicial (Enganche):`, marginX + 10, yEcon + 18);
+        doc.text(`$${data.contract.downPayment.toLocaleString("en-US")} MXN`, marginX + 70, yEcon + 18);
 
-    const saldoPrestante = data.plan.price - data.contract.downPayment;
-    doc.text(`Saldo Restante:`, marginX + 10, yEcon + 26);
-    doc.text(`$${saldoPrestante.toLocaleString("en-US")} MXN`, marginX + 70, yEcon + 26);
+        const saldoPrestante = data.plan.price - data.contract.downPayment;
+        doc.text(`Saldo Restante:`, marginX + 10, yEcon + 26);
+        doc.text(`$${saldoPrestante.toLocaleString("en-US")} MXN`, marginX + 70, yEcon + 26);
 
-    doc.text(`Esquema de Pagos:`, marginX + 10, yEcon + 34);
-    doc.setFont("helvetica", "bold");
-    doc.text(`${data.plan.installmentsCount} cuotas de $${data.contract.installmentAmount.toLocaleString("en-US")} MXN`, marginX + 70, yEcon + 34);
+        doc.text(`Esquema de Pagos:`, marginX + 10, yEcon + 34);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${data.plan.installmentsCount} cuotas de $${data.contract.installmentAmount.toLocaleString("en-US")} MXN`, marginX + 70, yEcon + 34);
 
-    // Cláusulas Generales
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    const clausulasText = `
+        // Cláusulas Generales
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        const clausulasText = `
 1. EL PRESTADOR se compromete a brindar los servicios integrados en el plan de previsión sin importar el tiempo transcurrido, sujeto al cumplimiento total del pago por parte del CONTRATANTE.
 2. EL CONTRATANTE se compromete a realizar los pagos en las fechas acordadas. En caso de atraso mayor a 60 días, el contrato podrá suspender temporalmente los beneficios hasta su regularización.
 3. Este contrato puede ser reasignado a cualquier mascota propiedad del CONTRATANTE al momento de necesitar el servicio.
-    `.trim();
-    const splitClausulas = doc.splitTextToSize(clausulasText, pageWidth - (marginX * 2));
-    doc.text(splitClausulas, marginX, yEcon + 50);
+        `.trim();
+        const splitClausulas = doc.splitTextToSize(clausulasText, pageWidth - (marginX * 2));
+        doc.text(splitClausulas, marginX, yEcon + 50);
+    }
 
-    // Firmas
+    // Firmas (Siempre se muestran al final)
     const yFirmas = 230;
 
     // Linea Firma Cliente
@@ -134,5 +161,6 @@ Ambas partes acuerdan sujetarse a las siguientes cláusulas relacionadas con el 
     doc.text(`Generado por Aura Systems - Tel: ${data.system.contactPhone || ""}`, pageWidth / 2, 270, { align: "center" });
 
     // Descargar Archivo
-    doc.save(`Contrato_Prevision_${data.contract.id}.pdf`);
+    const fileName = data.template?.name ? `${data.template.name.replace(/\s+/g, '_')}_${data.contract.id}.pdf` : `Contrato_Prevision_${data.contract.id}.pdf`;
+    doc.save(fileName);
 };
