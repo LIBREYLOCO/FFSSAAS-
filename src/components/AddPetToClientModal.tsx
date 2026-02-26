@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Calendar, Loader2 } from "lucide-react";
+import { X, Calendar, Loader2, Upload, Dog } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 interface Props {
     isOpen: boolean;
@@ -14,14 +15,27 @@ interface Props {
 
 export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerId, ownerName }: Props) {
     const [loading, setLoading] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
     const [formData, setFormData] = useState({
         name: "",
         species: "Perro",
         breed: "",
         birthDate: "",
         weightKg: "",
-        color: ""
+        color: "",
+        photoUrl: ""
     });
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setSelectedFile(file);
+            setPreviewUrl(URL.createObjectURL(file));
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -35,7 +49,7 @@ export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerI
             if (res.ok) {
                 onSuccess();
                 onClose();
-                setFormData({ name: "", species: "Perro", breed: "", birthDate: "", weightKg: "", color: "" });
+                setFormData({ name: "", species: "Perro", breed: "", birthDate: "", weightKg: "", color: "", photoUrl: "" });
             }
         } catch (error) {
             console.error(error);
@@ -67,6 +81,29 @@ export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerI
                         </header>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
+                            {/* Photo Upload Area */}
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="relative w-24 h-24 rounded-full bg-white/5 border-2 border-dashed border-white/20 flex items-center justify-center overflow-hidden group">
+                                    {previewUrl ? (
+                                        <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Dog size={32} className="text-slate-500" />
+                                    )}
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                        <Upload size={20} className="text-white" />
+                                    </div>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    />
+                                </div>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                                    {uploadingImage ? "Subiendo..." : "Foto de la Mascota (Opcional)"}
+                                </p>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nombre</label>
@@ -146,11 +183,11 @@ export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerI
                             </div>
 
                             <button
-                                disabled={loading || !ownerId}
+                                disabled={loading || !ownerId || uploadingImage}
                                 type="submit"
                                 className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-2 group mt-4 font-bold"
                             >
-                                {loading ? <Loader2 className="animate-spin" size={20} /> : "Vincular Mascota"}
+                                {loading || uploadingImage ? <Loader2 className="animate-spin" size={20} /> : "Vincular Mascota"}
                             </button>
                         </form>
                     </div>

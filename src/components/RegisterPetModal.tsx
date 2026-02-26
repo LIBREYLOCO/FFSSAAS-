@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Dog, User, Calendar, Loader2, Search } from "lucide-react";
+import { X, Dog, User, Calendar, Loader2, Search, Upload } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 interface Props {
     isOpen: boolean;
@@ -12,6 +13,10 @@ interface Props {
 
 export default function RegisterPetModal({ isOpen, onClose, onSuccess }: Props) {
     const [loading, setLoading] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
     const [owners, setOwners] = useState<any[]>([]);
     const [searchOwner, setSearchOwner] = useState("");
     const [formData, setFormData] = useState({
@@ -21,7 +26,8 @@ export default function RegisterPetModal({ isOpen, onClose, onSuccess }: Props) 
         birthDate: "",
         ownerId: "",
         weightKg: "",
-        color: ""
+        color: "",
+        photoUrl: ""
     });
 
     useEffect(() => {
@@ -36,26 +42,65 @@ export default function RegisterPetModal({ isOpen, onClose, onSuccess }: Props) 
         o.name.toLowerCase().includes(searchOwner.toLowerCase())
     );
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setSelectedFile(file);
+            setPreviewUrl(URL.createObjectURL(file));
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.ownerId) return alert("Por favor selecciona un dueño");
 
         setLoading(true);
+        let uploadedPhotoUrl = "";
+
         try {
+            if (selectedFile) {
+                setUploadingImage(true);
+                const fileExt = selectedFile.name.split('.').pop();
+                const fileName = `${Math.random()}.${fileExt}`;
+                const filePath = `pets/${fileName}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('pets-photos')
+                    .upload(filePath, selectedFile);
+
+                if (uploadError) {
+                    console.error("Error uploading image:", uploadError);
+                    alert("No se pudo subir la imagen.");
+                    setUploadingImage(false);
+                    setLoading(false);
+                    return;
+                }
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('pets-photos')
+                    .getPublicUrl(filePath);
+
+                uploadedPhotoUrl = publicUrl;
+                setUploadingImage(false);
+            }
+
             const res = await fetch("/api/pets", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({ ...formData, photoUrl: uploadedPhotoUrl })
             });
             if (res.ok) {
                 onSuccess();
                 onClose();
-                setFormData({ name: "", species: "Perro", breed: "", birthDate: "", ownerId: "", weightKg: "", color: "" });
+                setFormData({ name: "", species: "Perro", breed: "", birthDate: "", ownerId: "", weightKg: "", color: "", photoUrl: "" });
+                setPreviewUrl(null);
+                setSelectedFile(null);
             }
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
+            setUploadingImage(false);
         }
     };
 
@@ -198,11 +243,11 @@ export default function RegisterPetModal({ isOpen, onClose, onSuccess }: Props) 
                             </div>
 
                             <button
-                                disabled={loading || !formData.ownerId}
+                                disabled={loading || !formData.ownerId || uploadingImage}
                                 type="submit"
                                 className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-2 group mt-4 font-bold"
                             >
-                                {loading ? <Loader2 className="animate-spin" size={20} /> : "Vincular Mascota"}
+                                {loading || uploadingImage ? <Loader2 className="animate-spin" size={20} /> : "Vincular Mascota"}
                             </button>
                         </form>
                     </div>

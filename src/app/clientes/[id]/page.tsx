@@ -177,8 +177,12 @@ export default function ClientDetailPage() {
                             <div className="space-y-3">
                                 {(owner?.pets || []).map((pet: any) => (
                                     <div key={pet.id} className="glass-card p-4 rounded-2xl flex items-center gap-4 group hover:border-brand-gold-500/30 transition-colors">
-                                        <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-brand-gold-500">
-                                            <Dog size={24} />
+                                        <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center text-brand-gold-500 overflow-hidden">
+                                            {pet.photoUrl ? (
+                                                <img src={pet.photoUrl} alt={pet.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <Dog size={24} />
+                                            )}
                                         </div>
                                         <div className="flex-1">
                                             <h4 className="font-bold text-sm">{pet.name}</h4>
@@ -325,8 +329,12 @@ export default function ClientDetailPage() {
                                         <div className="glass-card p-6 rounded-[2rem] hover:border-brand-gold-500/30 transition-colors group">
                                             <div className="flex flex-col md:flex-row justify-between gap-4">
                                                 <div className="flex gap-4">
-                                                    <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-brand-gold-500 transition-colors">
-                                                        <Dog size={24} />
+                                                    <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-slate-400 group-hover:text-brand-gold-500 transition-colors overflow-hidden">
+                                                        {service.pet?.photoUrl ? (
+                                                            <img src={service.pet.photoUrl} alt={service.pet.name} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <Dog size={24} />
+                                                        )}
                                                     </div>
                                                     <div>
                                                         <div className="flex items-center gap-2 mb-1">
