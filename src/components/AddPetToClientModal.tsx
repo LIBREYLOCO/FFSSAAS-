@@ -75,6 +75,15 @@ export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerI
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ...formData, ownerId, photoUrl: uploadedPhotoUrl })
             });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                console.error("API Error details:", errorData);
+                alert(`Error al guardar: ${errorData.error || "Error desconocido en el servidor"}`);
+                setLoading(false);
+                return;
+            }
+
             if (res.ok) {
                 onSuccess();
                 onClose();
@@ -84,6 +93,7 @@ export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerI
             }
         } catch (error) {
             console.error(error);
+            alert("Error de conexión al guardar la mascota.");
         } finally {
             setLoading(false);
             setUploadingImage(false);
