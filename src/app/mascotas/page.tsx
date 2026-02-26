@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Dog, Search, User, Calendar, Plus } from "lucide-react";
+import { Dog, Search, User, Calendar, Plus, Edit2 } from "lucide-react";
 import RegisterPetModal from "@/components/RegisterPetModal";
+import EditPetModal from "@/components/EditPetModal";
 
 export default function MascotasPage() {
     const [pets, setPets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedPetToEdit, setSelectedPetToEdit] = useState<any>(null);
 
     const fetchPets = () => {
         setLoading(true);
@@ -31,9 +34,9 @@ export default function MascotasPage() {
     }, []);
 
     const filteredPets = Array.isArray(pets) ? pets.filter(pet =>
-        pet.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        pet.owner?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        pet.species?.toLowerCase().includes(searchQuery.toLowerCase())
+        pet.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pet.owner?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pet.species?.toLowerCase().includes(searchTerm.toLowerCase())
     ) : [];
 
     return (
@@ -44,7 +47,7 @@ export default function MascotasPage() {
                     <p className="text-slate-400">Listado completo de compañeros fieles.</p>
                 </div>
                 <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => setIsRegisterModalOpen(true)}
                     className="btn-primary flex items-center gap-2 w-fit"
                 >
                     <Plus size={20} />
@@ -53,17 +56,24 @@ export default function MascotasPage() {
             </header>
 
             <RegisterPetModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                isOpen={isRegisterModalOpen}
+                onClose={() => setIsRegisterModalOpen(false)}
                 onSuccess={fetchPets}
+            />
+
+            <EditPetModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                onSuccess={fetchPets}
+                pet={selectedPetToEdit}
             />
 
             <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
                 <Search className="text-slate-500" size={20} />
                 <input
                     type="text"
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
                     placeholder="Buscar mascota por nombre, especie o dueño..."
                     className="bg-transparent border-none outline-none flex-1 text-slate-200 placeholder:text-slate-500"
                 />
@@ -90,12 +100,26 @@ export default function MascotasPage() {
                             className="glass-card p-6 rounded-3xl group"
                         >
                             <div className="relative mb-6">
-                                <div className="w-full aspect-square rounded-2xl bg-gradient-to-br from-brand-gold-600/20 to-accent-500/10 flex items-center justify-center text-brand-gold-500 transition-transform group-hover:scale-105">
-                                    <Dog size={48} strokeWidth={1.5} />
+                                <div className="w-full aspect-square rounded-2xl bg-gradient-to-br from-brand-gold-600/20 to-accent-500/10 flex items-center justify-center text-brand-gold-500 transition-transform group-hover:scale-105 overflow-hidden">
+                                    {pet.photoUrl ? (
+                                        <img src={pet.photoUrl} alt={pet.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Dog size={48} strokeWidth={1.5} />
+                                    )}
                                 </div>
                                 <div className="absolute top-2 right-2 px-3 py-1 bg-bg-deep/80 backdrop-blur rounded-lg border border-white/10 text-[10px] font-bold uppercase tracking-wider text-brand-gold-500">
                                     {pet.species}
                                 </div>
+                                <button
+                                    onClick={() => {
+                                        setSelectedPetToEdit(pet);
+                                        setIsEditModalOpen(true);
+                                    }}
+                                    className="absolute top-2 left-2 p-1.5 bg-bg-deep/80 backdrop-blur rounded-lg border border-white/10 text-slate-400 hover:text-brand-gold-500 transition-colors z-10"
+                                    title="Editar Mascota"
+                                >
+                                    <Edit2 size={14} />
+                                </button>
                             </div>
 
                             <h3 className="text-lg font-bold mb-1">{pet.name}</h3>

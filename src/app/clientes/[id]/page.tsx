@@ -11,6 +11,8 @@ import Link from "next/link";
 import NewServiceOrderModal from "@/components/NewServiceOrderModal";
 import AddPetToClientModal from "@/components/AddPetToClientModal";
 import RegisterPaymentModal from "@/components/RegisterPaymentModal";
+import EditPetModal from "@/components/EditPetModal";
+import { Edit2 } from "lucide-react";
 
 export default function ClientDetailPage() {
     const params = useParams();
@@ -20,6 +22,8 @@ export default function ClientDetailPage() {
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
     const [isAddPetModalOpen, setIsAddPetModalOpen] = useState(false);
     const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [isEditPetModalOpen, setIsEditPetModalOpen] = useState(false);
+    const [selectedPetToEdit, setSelectedPetToEdit] = useState<any>(null);
     const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
     const fetchOwner = async () => {
@@ -188,6 +192,16 @@ export default function ClientDetailPage() {
                                             <h4 className="font-bold text-sm">{pet.name}</h4>
                                             <p className="text-xs text-slate-500">{pet.species} • {pet.breed || "Raza única"}</p>
                                         </div>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedPetToEdit(pet);
+                                                setIsEditPetModalOpen(true);
+                                            }}
+                                            className="p-1.5 bg-white/5 hover:bg-brand-gold-500/20 text-slate-400 hover:text-brand-gold-500 rounded-lg transition-colors border border-transparent hover:border-brand-gold-500/30"
+                                            title="Editar mascota"
+                                        >
+                                            <Edit2 size={14} />
+                                        </button>
                                         {pet.deathDate ? (
                                             <span className="text-[10px] bg-white/5 text-slate-500 px-2 py-1 rounded-lg">En memoria</span>
                                         ) : (
@@ -434,6 +448,13 @@ export default function ClientDetailPage() {
                     planName={owner.contracts[0].plan?.name || "Plan"}
                 />
             )}
+
+            <EditPetModal
+                isOpen={isEditPetModalOpen}
+                onClose={() => setIsEditPetModalOpen(false)}
+                onSuccess={fetchOwner}
+                pet={selectedPetToEdit}
+            />
         </div>
     );
 }
