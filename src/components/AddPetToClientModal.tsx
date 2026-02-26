@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Calendar, Loader2, Upload, Dog } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
@@ -29,6 +29,13 @@ export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerI
         photoUrl: "",
         ownerId: ownerId || ""
     });
+
+    // Synchronize ownerId when the prop updates (especially if fetched asynchronously in parent)
+    useEffect(() => {
+        if (ownerId && formData.ownerId !== ownerId) {
+            setFormData(prev => ({ ...prev, ownerId }));
+        }
+    }, [ownerId]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
