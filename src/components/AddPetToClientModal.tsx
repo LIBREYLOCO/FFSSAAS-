@@ -225,11 +225,16 @@ export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerI
                             </div>
 
                             <button
-                                disabled={loading || !ownerId || uploadingImage}
                                 type="submit"
                                 onClick={(e) => {
+                                    console.log("Button clicked!", { formData, ownerId, loading, uploadingImage });
                                     if (!formData.name || !formData.weightKg) {
-                                        alert("Por favor, llena los campos obligatorios: Nombre y Peso.");
+                                        alert(`Falta información. Nombre: ${formData.name}, Peso: ${formData.weightKg}`);
+                                        e.preventDefault();
+                                        return;
+                                    }
+                                    if (!ownerId) {
+                                        alert("No se encontró el ID del cliente.");
                                         e.preventDefault();
                                         return;
                                     }
