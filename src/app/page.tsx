@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -14,7 +14,11 @@ import {
   UserPlus,
   Settings,
   Map as MapIcon,
-  Search
+  Search,
+  FlaskConical,
+  Trash2,
+  RefreshCcw,
+  CheckCircle2
 } from "lucide-react";
 import {
   AreaChart,
@@ -41,19 +45,36 @@ const COLORS = ['#D4AF37', '#8E6F3E', '#A67C52', '#C0C0C0', '#4A4A4A'];
 export default function Home() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoMsg, setDemoMsg] = useState("");
 
-  useEffect(() => {
+  const fetchStats = useCallback(() => {
     fetch("/api/stats")
       .then(res => res.json())
-      .then(d => {
-        setData(d);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+      .then(d => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
+
+  const runDemo = async (action: "load" | "clear") => {
+    setDemoLoading(true);
+    setDemoMsg("");
+    try {
+      const res = await fetch("/api/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const result = await res.json();
+      setDemoMsg(result.message || (action === "load" ? "✅ Datos cargados" : "🗑️ Datos eliminados"));
+      setTimeout(() => { setDemoMsg(""); fetchStats(); }, 3000);
+    } catch {
+      setDemoMsg("❌ Error al procesar la acción");
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchStats(); }, [fetchStats]);
 
   const quickActions = [
     { label: "Seguimiento", path: "/seguimiento", icon: Search },
@@ -82,6 +103,44 @@ export default function Home() {
           </p>
         </motion.div>
       </header>
+
+      {/* Demo Data Panel */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="flex flex-wrap items-center gap-4 p-5 rounded-3xl bg-brand-gold-500/5 border border-brand-gold-500/20"
+      >
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="w-9 h-9 rounded-2xl bg-brand-gold-500/15 flex items-center justify-center text-brand-gold-400">
+            <FlaskConical size={18} />
+          </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-widest text-brand-gold-400">Datos Demo</p>
+            <p className="text-[10px] text-slate-500 font-bold">
+              {demoMsg ? demoMsg : "Carga o borra datos de prueba con un click"}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => runDemo("load")}
+            disabled={demoLoading}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-black uppercase tracking-widest transition-all disabled:opacity-40"
+          >
+            {demoLoading ? <RefreshCcw size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
+            Cargar Demo
+          </button>
+          <button
+            onClick={() => runDemo("clear")}
+            disabled={demoLoading}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-xs font-black uppercase tracking-widest transition-all disabled:opacity-40"
+          >
+            {demoLoading ? <RefreshCcw size={13} className="animate-spin" /> : <Trash2 size={13} />}
+            Borrar Demo
+          </button>
+        </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {(data?.stats || [1, 2, 3, 4]).map((stat: any, index: number) => {
