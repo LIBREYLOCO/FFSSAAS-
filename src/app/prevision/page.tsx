@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import RegisterContractModal from "@/components/RegisterContractModal";
 import PaymentHistoryModal from "@/components/PaymentHistoryModal";
 import ManagePlansModal from "@/components/ManagePlansModal";
-
+import { generatePrevisionContractPDF } from "@/lib/pdfGenerator";
 
 export default function PrevisionPage() {
     const [contracts, setContracts] = useState<any[]>([]);
@@ -35,6 +35,40 @@ export default function PrevisionPage() {
     useEffect(() => {
         fetchContracts();
     }, []);
+
+    const handleDownloadPDF = async (contract: any) => {
+        try {
+            const sysRes = await fetch("/api/system-config");
+            const systemConfig = sysRes.ok ? await sysRes.json() : {};
+
+            await generatePrevisionContractPDF({
+                owner: {
+                    name: contract.owner.name || "",
+                    address: contract.owner.address || "",
+                    phone: contract.owner.phone || "",
+                    email: contract.owner.email || ""
+                },
+                plan: {
+                    name: contract.plan.name || "",
+                    price: Number(contract.plan.price) || 0,
+                    installmentsCount: contract.plan.installmentsCount || 12
+                },
+                contract: {
+                    id: contract.id || "Pendiente",
+                    startDate: contract.startDate || new Date().toISOString(),
+                    downPayment: Number(contract.downPayment) || 0,
+                    installmentAmount: Number(contract.installmentAmount) || 0
+                },
+                system: {
+                    legalName: systemConfig?.["legalName"] || systemConfig?.find?.((c: any) => c.key === "legalName")?.value || "",
+                    legalRepresentative: systemConfig?.["legalRepresentative"] || systemConfig?.find?.((c: any) => c.key === "legalRepresentative")?.value || "",
+                    contactPhone: systemConfig?.["contactPhone"] || systemConfig?.find?.((c: any) => c.key === "contactPhone")?.value || ""
+                }
+            });
+        } catch (error) {
+            console.error("Error generating PDF", error);
+        }
+    };
 
     return (
         <div className="space-y-8">
@@ -139,7 +173,7 @@ export default function PrevisionPage() {
                                     <p className="text-[10px] text-slate-400 text-right">Pagado: ${paidAmount} de ${contract.plan.price}</p>
                                 </div>
 
-                                <div className="flex flex-col items-end gap-3">
+                                <div className="flex flex-col items-end gap-3 mt-4 md:mt-0">
                                     <span className={cn(
                                         "px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border",
                                         contract.status === "ACTIVE"
@@ -148,15 +182,23 @@ export default function PrevisionPage() {
                                     )}>
                                         {contract.status === "ACTIVE" ? "Activo" : "Completado"}
                                     </span>
-                                    <button
-                                        onClick={() => {
-                                            setSelectedContract(contract);
-                                            setIsHistoryOpen(true);
-                                        }}
-                                        className="text-xs font-bold text-primary-500 hover:underline"
-                                    >
-                                        Ver Pagos
-                                    </button>
+                                    <div className="flex flex-col gap-2 items-end">
+                                        <button
+                                            onClick={() => handleDownloadPDF(contract)}
+                                            className="text-xs font-bold text-brand-gold-500 hover:underline flex items-center gap-1 bg-white/5 px-3 py-2 rounded-lg"
+                                        >
+                                            Descargar Contrato PDF
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setSelectedContract(contract);
+                                                setIsHistoryOpen(true);
+                                            }}
+                                            className="text-xs font-bold text-primary-500 hover:underline bg-white/5 px-3 py-2 rounded-lg"
+                                        >
+                                            Ver Historial de Pagos
+                                        </button>
+                                    </div>
                                 </div>
                             </motion.div>
                         );

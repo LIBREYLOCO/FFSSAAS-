@@ -70,7 +70,7 @@ export default function RegisterContractModal({ isOpen, onClose, onSuccess }: Pr
                 const selectedOwner = owners.find(o => o.id === formData.ownerId);
                 const selectedPlan = plans.find(p => p.id === formData.planId);
 
-                generatePrevisionContractPDF({
+                await generatePrevisionContractPDF({
                     owner: {
                         name: selectedOwner?.name || "",
                         address: selectedOwner?.address || "",
@@ -97,6 +97,9 @@ export default function RegisterContractModal({ isOpen, onClose, onSuccess }: Pr
 
                 onSuccess();
                 onClose();
+            } else {
+                const errorData = await res.json().catch(() => ({}));
+                alert(`Error al generar contrato: ${errorData.error || "Asegúrate de haber llenado todos los campos (Asesor incluido)"}`);
             }
         } catch (error) {
             console.error(error);

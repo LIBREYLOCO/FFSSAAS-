@@ -38,7 +38,7 @@ export async function POST(request: Request) {
             data: {
                 ownerId,
                 planId,
-                salespersonId,
+                salespersonId: salespersonId || null,
                 downPayment,
                 installmentAmount,
                 status: "ACTIVE"

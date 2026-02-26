@@ -1,5 +1,3 @@
-import { jsPDF } from "jspdf";
-
 interface ContractData {
     owner: {
         name: string;
@@ -25,7 +23,10 @@ interface ContractData {
     };
 }
 
-export const generatePrevisionContractPDF = (data: ContractData) => {
+export const generatePrevisionContractPDF = async (data: ContractData) => {
+    // Import jsPDF dynamically to avoid SSR issues
+    const { jsPDF } = await import("jspdf");
+
     // Inicializar jspdf en formato Carta (Letter)
     const doc = new jsPDF({
         orientation: "portrait",
