@@ -65,13 +65,26 @@ export async function POST(request: Request) {
                     }
                 });
             } else if (serviceType === "PREVISION") {
+                // Ensure default plan exists
+                const planId = "plan-basico";
+                await tx.previsionPlan.upsert({
+                    where: { id: planId },
+                    update: {},
+                    create: {
+                        id: planId,
+                        name: "Plan Básico de Previsión",
+                        price: 10500,
+                        installmentsCount: 12
+                    }
+                });
+
                 // Create a basic contract placeholder
                 await tx.previsionContract.create({
                     data: {
                         status: "ACTIVE",
                         startDate: new Date(),
                         ownerId: owner.id,
-                        planId: "plan-basico", // Default plan
+                        planId: planId,
                         downPayment: 1500,
                         installmentAmount: 875
                     }
