@@ -63,63 +63,83 @@ const PETS_DEMO = [
 ];
 
 export async function POST(request: Request) {
-    const { action } = await request.json();
-
     try {
+        const { action } = await request.json();
+
         if (action === "load") {
-            // Empleados
-            for (const u of USERS_DEMO) {
-                await prisma.user.upsert({
-                    where: { email: u.email },
-                    update: { name: u.name, role: u.role },
-                    create: u,
-                });
-            }
-            // Veterinarias
-            for (const v of VETS_DEMO) {
-                await prisma.veterinaryClinic.upsert({
-                    where: { id: v.id },
-                    update: { businessName: v.businessName, taxId: v.taxId, address: v.address, contactName: v.contactName, phone: v.phone },
-                    create: v,
-                });
-            }
-            // Clientes
-            for (const c of CLIENTS_DEMO) {
-                await prisma.owner.upsert({
-                    where: { id: c.id },
-                    update: { name: c.name, email: c.email, phone: c.phone, address: c.address, source: c.source },
-                    create: c,
-                });
-            }
-            // Mascotas
-            for (const p of PETS_DEMO) {
-                const ownerId = CLIENTS_DEMO[p.ownerIdx].id;
-                await prisma.pet.upsert({
-                    where: { id: p.id },
-                    update: { name: p.name, species: p.species, breed: p.breed, weightKg: p.weightKg, color: p.color },
-                    create: { id: p.id, name: p.name, species: p.species, breed: p.breed, weightKg: p.weightKg, color: p.color, ownerId },
-                });
-            }
-            return NextResponse.json({ success: true, message: "✅ Datos demo cargados: 9 empleados, 10 veterinarias, 10 clientes, 20 mascotas." });
+            // Parallelizar todas las operaciones para evitar timeout de Netlify
+            await Promise.all([
+                // Usuarios en paralelo
+                ...USERS_DEMO.map(u =>
+                    prisma.user.upsert({
+                        where: { email: u.email },
+                        update: { name: u.name, role: u.role },
+                        create: u,
+                    })
+                ),
+                // Veterinarias en paralelo
+                ...VETS_DEMO.map(v =>
+                    prisma.veterinaryClinic.upsert({
+                        where: { id: v.id },
+                        update: { businessName: v.businessName, taxId: v.taxId, address: v.address, contactName: v.contactName, phone: v.phone },
+                        create: v,
+                    })
+                ),
+                // Clientes en paralelo
+                ...CLIENTS_DEMO.map(c =>
+                    prisma.owner.upsert({
+                        where: { id: c.id },
+                        update: { name: c.name, email: c.email, phone: c.phone, address: c.address, source: c.source },
+                        create: c,
+                    })
+                ),
+            ]);
+
+            // Mascotas después (dependen de que los owners existan)
+            await Promise.all(
+                PETS_DEMO.map(p =>
+                    prisma.pet.upsert({
+                        where: { id: p.id },
+                        update: { name: p.name, species: p.species, breed: p.breed, weightKg: p.weightKg, color: p.color },
+                        create: {
+                            id: p.id, name: p.name, species: p.species,
+                            breed: p.breed, weightKg: p.weightKg, color: p.color,
+                            ownerId: CLIENTS_DEMO[p.ownerIdx].id,
+                        },
+                    })
+                )
+            );
+
+            return NextResponse.json({ success: true, message: "✅ Demo cargado: 9 empleados, 10 veterinarias, 10 clientes, 20 mascotas." });
         }
 
         if (action === "clear") {
+            // Borrar en orden por dependencias FK, en paralelo dentro de cada nivel
             await prisma.serviceOrderProduct.deleteMany({});
             await prisma.trackingLog.deleteMany({});
             await prisma.serviceOrder.deleteMany({});
             await prisma.payment.deleteMany({});
             await prisma.previsionContract.deleteMany({});
-            await prisma.pet.deleteMany({ where: { id: { startsWith: 'demo-pet-' } } });
-            await prisma.owner.deleteMany({ where: { id: { startsWith: 'demo-owner-' } } });
-            await prisma.veterinaryClinic.deleteMany({ where: { id: { startsWith: 'demo-vet-' } } });
-            await prisma.user.deleteMany({ where: { email: { in: USERS_DEMO.map(u => u.email) } } });
-            await prisma.accessLog.deleteMany({});
+            await Promise.all([
+                prisma.pet.deleteMany({ where: { id: { startsWith: 'demo-pet-' } } }),
+                prisma.accessLog.deleteMany({}),
+            ]);
+            await Promise.all([
+                prisma.owner.deleteMany({ where: { id: { startsWith: 'demo-owner-' } } }),
+                prisma.veterinaryClinic.deleteMany({ where: { id: { startsWith: 'demo-vet-' } } }),
+                prisma.user.deleteMany({ where: { email: { in: USERS_DEMO.map(u => u.email) } } }),
+            ]);
             return NextResponse.json({ success: true, message: "🗑️ Datos demo eliminados correctamente." });
         }
 
         return NextResponse.json({ success: false, message: "Acción no válida" }, { status: 400 });
-    } catch (err) {
+
+    } catch (err: any) {
         console.error("Demo API error:", err);
-        return NextResponse.json({ success: false, message: "Error al procesar la acción demo." }, { status: 500 });
+        return NextResponse.json({
+            success: false,
+            message: "Error al procesar la acción demo.",
+            details: err?.message || String(err)
+        }, { status: 500 });
     }
 }
