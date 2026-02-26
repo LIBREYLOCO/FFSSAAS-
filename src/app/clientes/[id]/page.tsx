@@ -69,12 +69,14 @@ export default function ClientDetailPage() {
         );
     }
 
-    if (!owner) {
+    if (!owner || !owner.id) {
         return (
-            <div className="text-center py-20">
+            <div className="text-center py-20 flex flex-col items-center justify-center space-y-4">
+                <AlertCircle size={48} className="text-brand-gold-500 opacity-50 mx-auto" />
                 <h2 className="text-2xl font-bold">Cliente no encontrado</h2>
-                <Link href="/clientes" className="text-brand-gold-500 hover:underline mt-4 inline-block">
-                    Volver a la lista
+                <p className="text-slate-500 text-sm">Es posible que el enlace esté roto o el cliente haya sido eliminado.</p>
+                <Link href="/clientes" className="btn-primary mt-4 inline-block">
+                    Volver a Clientes
                 </Link>
             </div>
         );
