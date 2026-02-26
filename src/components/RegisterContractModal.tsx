@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, HeartHandshake, User, DollarSign, Loader2, Search, Briefcase } from "lucide-react";
+import { generatePrevisionContractPDF } from "@/lib/pdfGenerator";
 
 interface Props {
     isOpen: boolean;
@@ -24,16 +25,20 @@ export default function RegisterContractModal({ isOpen, onClose, onSuccess }: Pr
         downPayment: 0
     });
 
+    const [systemConfig, setSystemConfig] = useState<any>(null);
+
     useEffect(() => {
         if (isOpen) {
             Promise.all([
                 fetch("/api/owners").then(res => res.json()),
                 fetch("/api/prevision/plans").then(res => res.json()),
-                fetch("/api/vendedores").then(res => res.json())
-            ]).then(([ownersData, plansData, vendorsData]) => {
+                fetch("/api/vendedores").then(res => res.json()),
+                fetch("/api/system-config").then(res => res.json())
+            ]).then(([ownersData, plansData, vendorsData, sysConfigData]) => {
                 setOwners(ownersData);
                 setPlans(plansData);
                 setVendedores(vendorsData);
+                setSystemConfig(sysConfigData);
             });
         }
     }, [isOpen]);
@@ -59,6 +64,37 @@ export default function RegisterContractModal({ isOpen, onClose, onSuccess }: Pr
                 body: JSON.stringify(formData)
             });
             if (res.ok) {
+                const newContract = await res.json();
+
+                // Generar PDF
+                const selectedOwner = owners.find(o => o.id === formData.ownerId);
+                const selectedPlan = plans.find(p => p.id === formData.planId);
+
+                generatePrevisionContractPDF({
+                    owner: {
+                        name: selectedOwner?.name || "",
+                        address: selectedOwner?.address || "",
+                        phone: selectedOwner?.phone || "",
+                        email: selectedOwner?.email || ""
+                    },
+                    plan: {
+                        name: selectedPlan?.name || "",
+                        price: Number(selectedPlan?.price) || 0,
+                        installmentsCount: selectedPlan?.installmentsCount || 12
+                    },
+                    contract: {
+                        id: newContract.id || "Pendiente",
+                        startDate: newContract.startDate || new Date().toISOString(),
+                        downPayment: formData.downPayment,
+                        installmentAmount: selectedPlan ? ((Number(selectedPlan.price) - formData.downPayment) / selectedPlan.installmentsCount) : 0
+                    },
+                    system: {
+                        legalName: systemConfig?.legalName || "",
+                        legalRepresentative: systemConfig?.legalRepresentative || "",
+                        contactPhone: systemConfig?.contactPhone || ""
+                    }
+                });
+
                 onSuccess();
                 onClose();
             }

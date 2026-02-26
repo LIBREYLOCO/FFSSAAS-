@@ -42,11 +42,25 @@ export default function ConfigPage() {
 
     const [system, setSystem] = useState({
         appName: "Aura Forever Friends",
+        legalName: "Aura Mascotas S.A. de C.V.",
+        legalRepresentative: "Roberto Martínez Cruz",
         contactPhone: "55 1234 5678",
         contactWhatsApp: "55 8765 4321",
         primaryColor: "#D4AF37",
         allowPublicTracking: true,
     });
+
+    const fetchSystemConfig = async () => {
+        try {
+            const res = await fetch("/api/system-config");
+            if (res.ok) {
+                const data = await res.json();
+                setSystem(data);
+            }
+        } catch (error) {
+            console.error("Error fetching system config:", error);
+        }
+    };
 
     const fetchUsers = async () => {
         try {
@@ -62,6 +76,7 @@ export default function ConfigPage() {
 
     useEffect(() => {
         fetchUsers();
+        fetchSystemConfig();
     }, []);
 
     const handleAddUser = async () => {
@@ -87,12 +102,26 @@ export default function ConfigPage() {
         }
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         setLoading(true);
-        setTimeout(() => {
+        try {
+            // Guardar configuración del sistema (sólo estamos enfocándonos en "system" por ahora)
+            const res = await fetch("/api/system-config", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(system),
+            });
+            if (res.ok) {
+                alert("Configuración de marca y contratos guardada exitosamente.");
+            } else {
+                alert("Hubo un error al guardar la configuración.");
+            }
+        } catch (error) {
+            console.error("Error saving config:", error);
+            alert("Error de conexión al guardar.");
+        } finally {
             setLoading(false);
-            alert("Configuración de precios y sistema guardada.");
-        }, 1000);
+        }
     };
 
     return (
@@ -241,9 +270,29 @@ export default function ConfigPage() {
                                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nombre de la Aplicación</label>
                                             <input
                                                 value={system.appName}
-                                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50"
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50 transition-colors"
                                                 onChange={(e) => setSystem({ ...system, appName: e.target.value })}
                                             />
+                                        </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Razón Social Legal</label>
+                                                <input
+                                                    value={system.legalName}
+                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50 transition-colors"
+                                                    onChange={(e) => setSystem({ ...system, legalName: e.target.value })}
+                                                    placeholder="Ej. Aura Mascotas S.A."
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Representante Legal (Firma)</label>
+                                                <input
+                                                    value={system.legalRepresentative}
+                                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50 transition-colors"
+                                                    onChange={(e) => setSystem({ ...system, legalRepresentative: e.target.value })}
+                                                    placeholder="Nombre de quien firma contratos"
+                                                />
+                                            </div>
                                         </div>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="space-y-2">

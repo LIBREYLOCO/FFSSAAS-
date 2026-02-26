@@ -91,10 +91,21 @@ export async function POST(request: Request) {
                 });
             }
 
-            return owner;
+            return owner.id;
         });
 
-        return NextResponse.json(result);
+        // 3. Fetch the fully populated owner to return to the frontend
+        const newOwner = await prisma.owner.findUnique({
+            where: { id: result },
+            include: {
+                pets: true,
+                contracts: { include: { plan: true } },
+                serviceOrders: true,
+                _count: { select: { pets: true, contracts: true } }
+            }
+        });
+
+        return NextResponse.json(newOwner);
     } catch (error: any) {
         console.error("Error creating owner context:", error);
         return NextResponse.json({ error: "Error creating owner", details: error.message }, { status: 500 });
