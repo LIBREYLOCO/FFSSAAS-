@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: Request, props: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await props.params;
         const body = await request.json();
         const { name, species, breed, birthDate, deathDate, weightKg, color, photoUrl } = body;
 
@@ -17,7 +18,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
         if (photoUrl !== undefined) updateData.photoUrl = photoUrl;
 
         const pet = await prisma.pet.update({
-            where: { id: params.id },
+            where: { id },
             data: updateData
         });
 
@@ -28,10 +29,11 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, props: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await props.params;
         await prisma.pet.delete({
-            where: { id: params.id }
+            where: { id }
         });
         return NextResponse.json({ success: true });
     } catch (error) {
