@@ -40,7 +40,15 @@ export async function POST(request: Request) {
                 }
             });
 
-            // 2. If there are products, link them and deduct stock
+            // 2. Mark the pet as deceased (Set deathDate)
+            await tx.pet.update({
+                where: { id: petId },
+                data: {
+                    deathDate: serviceDate ? new Date(serviceDate) : new Date()
+                }
+            });
+
+            // 3. If there are products, link them and deduct stock
             if (selectedProducts && Array.isArray(selectedProducts)) {
                 for (const item of selectedProducts) {
                     await tx.serviceOrderProduct.create({

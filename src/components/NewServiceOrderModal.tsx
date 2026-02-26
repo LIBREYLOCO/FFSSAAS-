@@ -143,25 +143,31 @@ export default function NewServiceOrderModal({ isOpen, onClose, owner, onSuccess
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Seleccionar Mascota</label>
                                     <div className="grid grid-cols-1 gap-3">
-                                        {owner.pets?.map((pet: any) => (
-                                            <button
-                                                key={pet.id}
-                                                onClick={() => setFormData({ ...formData, petId: pet.id })}
-                                                className={`flex items-center gap-4 p-4 rounded-2xl border transition-all text-left ${formData.petId === pet.id
-                                                    ? "bg-brand-gold-500/10 border-brand-gold-500/50 text-brand-gold-500 shadow-[0_0_20px_rgba(197,160,89,0.1)]"
-                                                    : "bg-white/5 border-white/5 text-slate-400 hover:border-white/10"
-                                                    }`}
-                                            >
-                                                <div className={`p-2 rounded-xl ${formData.petId === pet.id ? "bg-brand-gold-500/20" : "bg-white/5"}`}>
-                                                    <Dog size={20} />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <p className="font-bold text-sm tracking-tight">{pet.name}</p>
-                                                    <p className="text-[10px] uppercase opacity-60 font-medium">{pet.species} • {pet.breed || "Raza única"}</p>
-                                                </div>
-                                                {formData.petId === pet.id && <CheckCircle2 size={18} className="text-brand-gold-500" />}
-                                            </button>
-                                        ))}
+                                        {owner.pets?.filter((p: any) => !p.deathDate).length === 0 ? (
+                                            <div className="p-4 text-center border-2 border-dashed border-white/10 rounded-2xl text-slate-500 italic">
+                                                No hay mascotas activas registradas para este cliente.
+                                            </div>
+                                        ) : (
+                                            owner.pets?.filter((p: any) => !p.deathDate).map((pet: any) => (
+                                                <button
+                                                    key={pet.id}
+                                                    onClick={() => setFormData({ ...formData, petId: pet.id })}
+                                                    className={`flex items-center gap-4 p-4 rounded-2xl border transition-all text-left ${formData.petId === pet.id
+                                                        ? "bg-brand-gold-500/10 border-brand-gold-500/50 text-brand-gold-500 shadow-[0_0_20px_rgba(197,160,89,0.1)]"
+                                                        : "bg-white/5 border-white/5 text-slate-400 hover:border-white/10"
+                                                        }`}
+                                                >
+                                                    <div className={`p-2 rounded-xl ${formData.petId === pet.id ? "bg-brand-gold-500/20" : "bg-white/5"}`}>
+                                                        <Dog size={20} />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="font-bold text-sm tracking-tight">{pet.name}</p>
+                                                        <p className="text-[10px] uppercase opacity-60 font-medium">{pet.species} • {pet.breed || "Raza única"}</p>
+                                                    </div>
+                                                    {formData.petId === pet.id && <CheckCircle2 size={18} className="text-brand-gold-500" />}
+                                                </button>
+                                            ))
+                                        )}
                                     </div>
                                 </div>
                                 <div className="pt-4">
