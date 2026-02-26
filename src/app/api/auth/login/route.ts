@@ -2,56 +2,40 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
 export async function POST(request: Request) {
+    const { email, name } = await (request.json());
+
+    // Intentar registrar acceso en bitácora (no bloquea el acceso si falla)
     try {
-        const { email, name } = await request.json();
+        await prisma.accessLog.create({ data: { name, email } });
+    } catch (dbErr) {
+        console.warn("AccessLog write failed (non-critical):", dbErr);
+    }
 
-        // 1. Registrar el acceso en la bitácora
-        await prisma.accessLog.create({
-            data: { name, email }
-        });
+    // Determinar nombre de usuario para la sesión
+    let userName = name;
+    let userRole = "VENDEDOR";
 
-        // 2. Buscar o crear el usuario para la sesión
-        let user = await prisma.user.findUnique({
-            where: { email }
-        });
-
+    try {
+        let user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
             user = await prisma.user.create({
-                data: {
-                    name,
-                    email,
-                    password: "SYSTEM_MANAGED", // Placeholder ya que no se usará
-                    role: "VENDEDOR"
-                }
+                data: { name, email, password: "SYSTEM_MANAGED", role: "VENDEDOR" }
             });
         }
-
-
-        const response = NextResponse.json({ success: true, user: { name: user.name, role: user.role } });
-
-        // Set a simple session cookie (In production use JWT)
-        response.cookies.set("aura_session", JSON.stringify({ id: user.id, role: user.role }), {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            maxAge: 60 * 60 * 24 * 7 // 1 week
-        });
-
-        return response;
-    } catch (error: any) {
-        console.error("Auth error details:", error);
-
-        let errorMessage = "Error en el servidor de autenticación";
-        if (error.message && error.message.includes("database string is invalid")) {
-            errorMessage = "Error de conexión: Configuración de base de datos inválida (Netlify Var)";
-        } else if (error.code === 'P1001') {
-            errorMessage = "No se pudo conectar a la base de datos de Supabase";
-        }
-
-        return NextResponse.json({
-            error: "Auth error",
-            message: errorMessage,
-            details: error.message
-        }, { status: 500 });
+        userName = user.name;
+        userRole = user.role;
+    } catch (dbErr) {
+        console.warn("User lookup/create failed (non-critical):", dbErr);
     }
+
+    // Siempre conceder acceso con nombre y correo proporcionados
+    const response = NextResponse.json({ success: true, user: { name: userName, role: userRole } });
+    response.cookies.set("aura_session", JSON.stringify({ email, role: userRole }), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7
+    });
+
+    return response;
 }
