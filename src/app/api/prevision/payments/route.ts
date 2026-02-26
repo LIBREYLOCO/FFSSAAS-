@@ -23,7 +23,6 @@ export async function POST(request: Request) {
                 contractId,
                 amount,
                 type,
-                notes,
                 status: "PAID" // Default for manual entry in this flow
             }
         });
