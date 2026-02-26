@@ -10,7 +10,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@prisma/client": "^6.4.1",
+    "@prisma/client": "6.4.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.34.0",
@@ -33,7 +33,7 @@
     "@types/react-leaflet": "^3.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
-    "prisma": "^6.4.1",
+    "prisma": "6.4.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
