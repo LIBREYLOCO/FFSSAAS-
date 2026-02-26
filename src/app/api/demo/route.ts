@@ -62,6 +62,36 @@ const PETS_DEMO = [
     { id: 'demo-pet-19', name: 'Príncipe', species: 'Perro', breed: 'Pomerania', weightKg: 3.2, color: 'Naranja', ownerIdx: 9 },
 ];
 
+const TEMPLATES_DEMO = [
+    {
+        id: 'demo-template-0',
+        name: 'Contrato de Previsión Básico',
+        category: 'PREVISION',
+        content: `
+<h3 style="text-align: center;"><strong>CONTRATO DE SERVICIOS PREVISORIOS FUNERARIOS PARA MASCOTAS</strong></h3>
+<p><strong>DECLARACIONES</strong></p>
+<p>De una parte, la empresa denominada <strong>{{EMPRESA_NOMBRE}}</strong>, representada en este acto por <strong>{{REPRESENTANTE}}</strong>, a quien en lo sucesivo se le denominará "EL PRESTADOR".</p>
+<p>Y de otra parte, el/la C. <strong>{{CLIENTE_NOMBRE}}</strong>, con domicilio en <strong>{{CLIENTE_DIRECCION}}</strong>, a quien en lo sucesivo se le denominará "EL CONTRATANTE".</p>
+<p>Ambas partes acuerdan sujetarse a las siguientes cláusulas relacionadas con el plan de previsión funeraria para mascotas denominado "<strong>{{PLAN_NOMBRE}}</strong>".</p>
+<p>&nbsp;</p>
+<p><strong>RESUMEN ECONÓMICO DEL PRESTADOR</strong></p>
+<ul>
+<li>Costo Total del Plan: <strong>{{PLAN_PRECIO}}</strong></li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>CLÁUSULAS</strong></p>
+<ol>
+<li>EL PRESTADOR se compromete a brindar los servicios integrados en el plan de previsión sin importar el tiempo transcurrido, sujeto al cumplimiento total del pago por parte del CONTRATANTE.</li>
+<li>EL CONTRATANTE se compromete a realizar los pagos en las fechas acordadas. En caso de atraso mayor a 60 días, el contrato podrá suspender temporalmente los beneficios hasta su regularización.</li>
+<li>Este contrato puede ser reasignado a cualquier mascota propiedad del CONTRATANTE al momento de necesitar el servicio.</li>
+</ol>
+<p>&nbsp;</p>
+<p>Se firma el presente contrato el día: <strong>{{FECHA_ACTUAL}}</strong></p>
+        `,
+        isActive: true
+    }
+];
+
 export async function POST(request: Request) {
     try {
         const { action } = await request.json();
@@ -93,6 +123,14 @@ export async function POST(request: Request) {
                         create: c,
                     })
                 ),
+                // Plantillas en paralelo
+                ...TEMPLATES_DEMO.map(t =>
+                    prisma.contractTemplate.upsert({
+                        where: { id: t.id },
+                        update: { name: t.name, content: t.content, category: t.category, isActive: t.isActive },
+                        create: t,
+                    })
+                ),
             ]);
 
             // Mascotas después (dependen de que los owners existan)
@@ -110,7 +148,7 @@ export async function POST(request: Request) {
                 )
             );
 
-            return NextResponse.json({ success: true, message: "✅ Demo cargado: 9 empleados, 10 veterinarias, 10 clientes, 20 mascotas." });
+            return NextResponse.json({ success: true, message: "✅ Demo cargado: Usuarios, Clientes, Mascotas y Plantillas listas." });
         }
 
         if (action === "clear") {
@@ -128,6 +166,7 @@ export async function POST(request: Request) {
                 prisma.owner.deleteMany({ where: { id: { startsWith: 'demo-owner-' } } }),
                 prisma.veterinaryClinic.deleteMany({ where: { id: { startsWith: 'demo-vet-' } } }),
                 prisma.user.deleteMany({ where: { email: { in: USERS_DEMO.map(u => u.email) } } }),
+                prisma.contractTemplate.deleteMany({ where: { id: { startsWith: 'demo-template-' } } }),
             ]);
             return NextResponse.json({ success: true, message: "🗑️ Datos demo eliminados correctamente." });
         }

@@ -13,7 +13,10 @@ import {
     CheckCircle2,
     Palette,
     Bell,
-    FileText
+    FileText,
+    FlaskConical,
+    RefreshCcw,
+    Trash2
 } from "lucide-react";
 // import { toast } from "sonner"; // Removed as it is not in package.json
 
@@ -51,6 +54,29 @@ export default function ConfigPage() {
         primaryColor: "#D4AF37",
         allowPublicTracking: true,
     });
+
+    const [demoLoading, setDemoLoading] = useState(false);
+    const [demoMsg, setDemoMsg] = useState("");
+
+    const runDemo = async (action: "load" | "clear") => {
+        setDemoLoading(true);
+        setDemoMsg("");
+        try {
+            const res = await fetch("/api/demo", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action }),
+            });
+            const result = await res.json();
+            setDemoMsg(result.message || (action === "load" ? "✅ Datos cargados" : "🗑️ Datos eliminados"));
+            setTimeout(() => { setDemoMsg(""); }, 3000);
+            if (action === "load") fetchUsers(); // Refresh users if loaded
+        } catch {
+            setDemoMsg("❌ Error al procesar la acción");
+        } finally {
+            setDemoLoading(false);
+        }
+    };
 
     const fetchSystemConfig = async () => {
         try {
@@ -316,6 +342,43 @@ export default function ConfigPage() {
                                                     />
                                                     <span className="text-xs font-mono text-slate-500 uppercase">{system.primaryColor}</span>
                                                 </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-12 pt-8 border-t border-white/10">
+                                        <h2 className="text-xl font-bold mb-2 text-brand-gold-500">Herramientas de Desarrollador</h2>
+                                        <p className="text-slate-500 text-xs mb-6 max-w-lg">Carga o elimina datos de prueba (Demo) en la base de datos para simular gráficas y listas de uso rápido en la interfaz.</p>
+
+                                        <div className="flex flex-wrap items-center gap-4 p-5 rounded-3xl bg-brand-gold-500/5 border border-brand-gold-500/20 max-w-3xl">
+                                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                <div className="w-9 h-9 rounded-2xl bg-brand-gold-500/15 flex items-center justify-center text-brand-gold-400">
+                                                    <FlaskConical size={18} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-black uppercase tracking-widest text-brand-gold-400">Datos Demo</p>
+                                                    <p className="text-[10px] text-slate-500 font-bold">
+                                                        {demoMsg ? demoMsg : "Cargar 100 usuarios, planes, contratos, veterinarias"}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <button
+                                                    onClick={() => runDemo("load")}
+                                                    disabled={demoLoading}
+                                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-black uppercase tracking-widest transition-all disabled:opacity-40"
+                                                >
+                                                    {demoLoading ? <RefreshCcw size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
+                                                    Cargar Demo
+                                                </button>
+                                                <button
+                                                    onClick={() => runDemo("clear")}
+                                                    disabled={demoLoading}
+                                                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-xs font-black uppercase tracking-widest transition-all disabled:opacity-40"
+                                                >
+                                                    {demoLoading ? <RefreshCcw size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                                                    Borrar Demo
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
