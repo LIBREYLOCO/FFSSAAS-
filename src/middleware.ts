@@ -1,18 +1,20 @@
 import { NextResponse, NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
+    const { pathname } = request.nextUrl;
     const session = request.cookies.get('aura_session');
 
-    // Allow /login, /api/auth/login, and assets
-    if (request.nextUrl.pathname.startsWith('/login') ||
-        request.nextUrl.pathname.startsWith('/api/auth/login') ||
-        request.nextUrl.pathname.startsWith('/_next') ||
-        request.nextUrl.pathname.includes('.')) {
-        return NextResponse.next();
-    }
+    // Permitir todo lo que no requiere sesión
+    const isPublic =
+        pathname.startsWith('/login') ||
+        pathname.startsWith('/api/') ||       // Todas las APIs son libres - cada una gestiona su auth
+        pathname.startsWith('/_next') ||
+        pathname.includes('.');
 
+    if (isPublic) return NextResponse.next();
+
+    // Si no hay sesión, redirigir a login
     if (!session) {
-        console.log("No session found, redirecting to /login from:", request.nextUrl.pathname);
         return NextResponse.redirect(new URL('/login', request.url));
     }
 
@@ -20,14 +22,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - api/auth/login (handled manually above)
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         */
-        '/((?!api/auth/login|_next/static|_next/image|favicon.ico).*)',
-    ],
+    matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
 };
