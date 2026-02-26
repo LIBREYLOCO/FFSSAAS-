@@ -1,58 +1,47 @@
 import { NextResponse } from "next/server";
 
+// Login completamente sin BD - siempre concede acceso
+// La BD se usa de forma best-effort, nunca bloquea el acceso
 export async function POST(request: Request) {
+    let email = "";
+    let name = "";
+
     try {
-        const { email, name } = await request.json();
+        const body = await request.json();
+        email = body.email || "";
+        name = body.name || "";
+    } catch {
+        // Si no se puede parsear el body, continuar con datos vacíos
+    }
 
-        if (!email || !name) {
-            return NextResponse.json(
-                { success: false, message: "Correo y nombre son requeridos." },
-                { status: 400 }
-            );
-        }
+    const role = "VENDEDOR";
+    const sessionData = JSON.stringify({ name, email, role });
 
-        // Intentar guardar en bitácora sin bloquear el acceso
-        // Se ejecuta de forma asíncrona sin await para no bloquear
+    const response = NextResponse.json({
+        success: true,
+        user: { name, email, role }
+    });
+
+    response.cookies.set("aura_session", sessionData, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7,
+        path: "/"
+    });
+
+    // Intentar registrar en bitácora de forma completamente asíncrona
+    // nunca bloquea ni falla el login
+    setImmediate(async () => {
         try {
             const { default: prisma } = await import("@/lib/db");
-            prisma.accessLog.create({ data: { name, email } }).catch(() => {
-                // Silenciosamente ignorar errores de BD
-            });
+            await prisma.$connect();
+            await prisma.accessLog.create({ data: { name, email } }).catch(() => { });
+            await prisma.$disconnect();
         } catch {
-            // Si Prisma ni siquiera carga, continuar de todas formas
+            // Silencioso - la BD no es requerida para el acceso
         }
+    });
 
-        // Siempre conceder acceso — el sistema usa nombre/email como identidad
-        const role = "VENDEDOR";
-        const response = NextResponse.json({
-            success: true,
-            user: { name, email, role }
-        });
-
-        response.cookies.set("aura_session", JSON.stringify({ name, email, role }), {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            maxAge: 60 * 60 * 24 * 7, // 7 días
-            path: "/"
-        });
-
-        return response;
-
-    } catch (err) {
-        // Error procesando el request — devolver siempre 200 con sesión básica
-        console.error("Login route unexpected error:", err);
-        const response = NextResponse.json({
-            success: true,
-            user: { name: "Usuario", email: "", role: "VENDEDOR" }
-        });
-        response.cookies.set("aura_session", JSON.stringify({ name: "Usuario", email: "", role: "VENDEDOR" }), {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-            maxAge: 60 * 60 * 24 * 7,
-            path: "/"
-        });
-        return response;
-    }
+    return response;
 }
