@@ -41,21 +41,52 @@ export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerI
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        let uploadedPhotoUrl = formData.photoUrl;
+
         try {
+            if (selectedFile) {
+                setUploadingImage(true);
+                const fileExt = selectedFile.name.split('.').pop();
+                const fileName = `${Math.random()}.${fileExt}`;
+                const filePath = `pets/${fileName}`;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('pets-photos')
+                    .upload(filePath, selectedFile);
+
+                if (uploadError) {
+                    console.error("Error uploading image:", uploadError);
+                    alert(`No se pudo subir la imagen: ${uploadError.message || "Error desconocido en Supabase"}`);
+                    setUploadingImage(false);
+                    setLoading(false);
+                    return;
+                }
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('pets-photos')
+                    .getPublicUrl(filePath);
+
+                uploadedPhotoUrl = publicUrl;
+                setUploadingImage(false);
+            }
+
             const res = await fetch("/api/pets", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...formData, ownerId })
+                body: JSON.stringify({ ...formData, ownerId, photoUrl: uploadedPhotoUrl })
             });
             if (res.ok) {
                 onSuccess();
                 onClose();
                 setFormData({ name: "", species: "Perro", breed: "", birthDate: "", weightKg: "", color: "", photoUrl: "", ownerId: ownerId || "" });
+                setPreviewUrl(null);
+                setSelectedFile(null);
             }
         } catch (error) {
             console.error(error);
         } finally {
             setLoading(false);
+            setUploadingImage(false);
         }
     };
 
