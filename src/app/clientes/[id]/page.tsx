@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import NewServiceOrderModal from "@/components/NewServiceOrderModal";
+import AddPetToClientModal from "@/components/AddPetToClientModal";
+import RegisterPaymentModal from "@/components/RegisterPaymentModal";
 
 export default function ClientDetailPage() {
     const params = useParams();
@@ -16,6 +18,8 @@ export default function ClientDetailPage() {
     const [owner, setOwner] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+    const [isAddPetModalOpen, setIsAddPetModalOpen] = useState(false);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
     const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
 
     const fetchOwner = async () => {
@@ -157,7 +161,10 @@ export default function ClientDetailPage() {
                     >
                         <div className="flex items-center justify-between">
                             <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 ml-2">Mascotas</h3>
-                            <button className="text-brand-gold-500 hover:text-brand-gold-400 transition-colors">
+                            <button
+                                onClick={() => setIsAddPetModalOpen(true)}
+                                className="text-brand-gold-500 hover:text-brand-gold-400 transition-colors"
+                            >
                                 <Plus size={20} />
                             </button>
                         </div>
@@ -219,9 +226,15 @@ export default function ClientDetailPage() {
                                                         {owner.contracts[0].plan?.name}
                                                     </p>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Estado de Cuenta</p>
-                                                    <p className="text-emerald-500 font-bold">AL CORRIENTE</p>
+                                                <div className="text-right flex flex-col items-end">
+                                                    <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">Estado de Cuenta</p>
+                                                    <p className="text-emerald-500 font-bold mb-2">AL CORRIENTE</p>
+                                                    <button
+                                                        onClick={() => setIsPaymentModalOpen(true)}
+                                                        className="bg-brand-gold-500/10 text-brand-gold-500 hover:bg-brand-gold-500 hover:text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors"
+                                                    >
+                                                        Registrar Pago +
+                                                    </button>
                                                 </div>
                                             </div>
 
@@ -395,6 +408,24 @@ export default function ClientDetailPage() {
                 owner={owner}
                 onSuccess={fetchOwner}
             />
+
+            <AddPetToClientModal
+                isOpen={isAddPetModalOpen}
+                onClose={() => setIsAddPetModalOpen(false)}
+                onSuccess={fetchOwner}
+                ownerId={owner.id}
+                ownerName={owner.name}
+            />
+
+            {owner.contracts?.length > 0 && (
+                <RegisterPaymentModal
+                    isOpen={isPaymentModalOpen}
+                    onClose={() => setIsPaymentModalOpen(false)}
+                    onSuccess={fetchOwner}
+                    contractId={owner.contracts[0].id}
+                    planName={owner.contracts[0].plan?.name || "Plan"}
+                />
+            )}
         </div>
     );
 }

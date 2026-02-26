@@ -4,7 +4,7 @@ import prisma from "@/lib/db";
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { contractId, amount, type } = body;
+        const { contractId, amount, type, notes } = body;
 
         if (!contractId || !amount || !type) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -23,6 +23,7 @@ export async function POST(request: Request) {
                 contractId,
                 amount,
                 type,
+                notes,
                 status: "PAID" // Default for manual entry in this flow
             }
         });
