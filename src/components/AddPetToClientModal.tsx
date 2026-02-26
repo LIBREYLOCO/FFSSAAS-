@@ -117,7 +117,7 @@ export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerI
                                 <h2 className="text-2xl font-bold aura-gradient bg-clip-text text-transparent">Nueva Mascota</h2>
                                 <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Dueño: {ownerName}</p>
                             </div>
-                            <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400">
+                            <button type="button" onClick={onClose} className="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400">
                                 <X size={20} />
                             </button>
                         </header>
@@ -148,7 +148,7 @@ export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerI
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nombre</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nombre *</label>
                                     <input
                                         required
                                         type="text"
@@ -201,7 +201,7 @@ export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerI
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Peso (Kg) <span className="text-brand-gold-500">*</span></label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Peso (Kg) *</label>
                                     <input
                                         required
                                         type="number"
@@ -227,6 +227,13 @@ export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerI
                             <button
                                 disabled={loading || !ownerId || uploadingImage}
                                 type="submit"
+                                onClick={(e) => {
+                                    if (!formData.name || !formData.weightKg) {
+                                        alert("Por favor, llena los campos obligatorios: Nombre y Peso.");
+                                        e.preventDefault();
+                                        return;
+                                    }
+                                }}
                                 className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-2 group mt-4 font-bold"
                             >
                                 {loading || uploadingImage ? <Loader2 className="animate-spin" size={20} /> : "Vincular Mascota"}
