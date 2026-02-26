@@ -6,6 +6,8 @@ import { HeartHandshake, Plus, Clock, CheckCircle2, DollarSign, User } from "luc
 import { cn } from "@/lib/utils";
 import RegisterContractModal from "@/components/RegisterContractModal";
 import PaymentHistoryModal from "@/components/PaymentHistoryModal";
+import ManagePlansModal from "@/components/ManagePlansModal";
+
 
 export default function PrevisionPage() {
     const [contracts, setContracts] = useState<any[]>([]);
@@ -13,6 +15,7 @@ export default function PrevisionPage() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedContract, setSelectedContract] = useState<any>(null);
     const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+    const [isManagePlansOpen, setIsManagePlansOpen] = useState(false);
 
     const fetchContracts = () => {
         setLoading(true);
@@ -40,14 +43,29 @@ export default function PrevisionPage() {
                     <h2 className="text-3xl font-bold italic tracking-tight">Ventas de Previsión</h2>
                     <p className="text-slate-400">Contratos de previsión activa y seguimiento de pagos.</p>
                 </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="btn-primary flex items-center gap-2 w-fit"
-                >
-                    <Plus size={20} />
-                    Nueva Venta
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setIsManagePlansOpen(true)}
+                        className="bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300 font-bold uppercase tracking-widest text-xs px-4 py-2 rounded-xl transition-colors flex items-center gap-2"
+                    >
+                        Gestionar Planes
+                    </button>
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="btn-primary flex items-center gap-2 w-fit"
+                    >
+                        <Plus size={20} />
+                        Nueva Venta
+                    </button>
+                </div>
             </header>
+
+            <ManagePlansModal
+                isOpen={isManagePlansOpen}
+                onClose={() => setIsManagePlansOpen(false)}
+                onSuccess={fetchContracts} // Refresca si es necesario
+            />
+
 
             <RegisterContractModal
                 isOpen={isModalOpen}
