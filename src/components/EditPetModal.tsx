@@ -70,7 +70,7 @@ export default function EditPetModal({ isOpen, onClose, onSuccess, pet }: Props)
 
                 if (uploadError) {
                     console.error("Error uploading image:", uploadError);
-                    alert("No se pudo subir la imagen.");
+                    alert(`No se pudo subir la imagen: ${uploadError.message || "Error desconocido en Supabase"}`);
                     setUploadingImage(false);
                     setLoading(false);
                     return;

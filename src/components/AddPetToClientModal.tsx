@@ -26,7 +26,8 @@ export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerI
         birthDate: "",
         weightKg: "",
         color: "",
-        photoUrl: ""
+        photoUrl: "",
+        ownerId: ownerId || ""
     });
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,7 +50,7 @@ export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerI
             if (res.ok) {
                 onSuccess();
                 onClose();
-                setFormData({ name: "", species: "Perro", breed: "", birthDate: "", weightKg: "", color: "", photoUrl: "" });
+                setFormData({ name: "", species: "Perro", breed: "", birthDate: "", weightKg: "", color: "", photoUrl: "", ownerId: ownerId || "" });
             }
         } catch (error) {
             console.error(error);

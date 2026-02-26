@@ -164,6 +164,29 @@ export default function RegisterPetModal({ isOpen, onClose, onSuccess }: Props) 
                                 </div>
                             </div>
 
+                            {/* Photo Upload Area */}
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="relative w-24 h-24 rounded-full bg-white/5 border-2 border-dashed border-white/20 flex items-center justify-center overflow-hidden group">
+                                    {previewUrl ? (
+                                        <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Dog size={32} className="text-slate-500" />
+                                    )}
+                                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                        <Upload size={20} className="text-white" />
+                                    </div>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleFileChange}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    />
+                                </div>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                                    {uploadingImage ? "Subiendo..." : "Foto de la Mascota (Opcional)"}
+                                </p>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nombre</label>
