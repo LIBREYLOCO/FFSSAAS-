@@ -12,7 +12,8 @@ import {
     Settings,
     Menu,
     X,
-    LogOut
+    LogOut,
+    Wrench
 } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -29,6 +30,7 @@ const navItems = [
     { name: "Mascotas", href: "/mascotas", icon: Dog },
     { name: "Previsión", href: "/prevision", icon: HeartHandshake },
     { name: "Vendedores", href: "/vendedores", icon: TrendingUp },
+    { name: "Operación", href: "/operacion", icon: Wrench },
     { name: "Veterinarias", href: "/veterinarias", icon: MapPin },
     { name: "Configuración", href: "/config", icon: Settings },
 ];

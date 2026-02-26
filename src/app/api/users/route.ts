@@ -36,8 +36,27 @@ export async function POST(request: Request) {
             }
         });
 
+        // Crear automáticamente el Vendedor o Chofer si aplica
+        if (user.role === "VENDEDOR") {
+            await prisma.salesperson.create({
+                data: {
+                    name: user.name,
+                    level: "JUNIOR",
+                    commissionRate: 5.0
+                }
+            });
+        } else if (user.role === "DRIVER") {
+            await prisma.driver.create({
+                data: {
+                    name: user.name,
+                    isActive: true
+                }
+            });
+        }
+
         return NextResponse.json(user);
     } catch (error) {
+        console.error("Error creating user:", error);
         return NextResponse.json({ error: "Error creating user" }, { status: 500 });
     }
 }
