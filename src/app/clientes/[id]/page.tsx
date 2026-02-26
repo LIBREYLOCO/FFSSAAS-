@@ -284,9 +284,9 @@ export default function ClientDetailPage() {
                                     ) : (
                                         <div className="py-8 text-center bg-white/5 rounded-3xl mt-4 border border-dashed border-white/10">
                                             <p className="text-sm text-slate-500">No hay contratos de previsión activos.</p>
-                                            <button className="text-brand-gold-500 text-xs font-bold uppercase mt-2 hover:underline">
+                                            <Link href="/prevision" className="text-brand-gold-500 text-xs font-bold uppercase mt-2 hover:underline inline-block">
                                                 Vincular Plan +
-                                            </button>
+                                            </Link>
                                         </div>
                                     )}
                                 </div>
@@ -299,11 +299,11 @@ export default function ClientDetailPage() {
                                         </div>
                                         <div className="space-y-4">
                                             <div>
-                                                <p className="text-2xl font-black">2</p>
+                                                <p className="text-2xl font-black">{owner.serviceOrders?.length || 0}</p>
                                                 <p className="text-[10px] text-slate-500 uppercase font-bold">Servicios Utilizados</p>
                                             </div>
                                             <div>
-                                                <p className="text-2xl font-black">$4,250</p>
+                                                <p className="text-2xl font-black">${(owner.serviceOrders || []).reduce((acc: number, order: any) => acc + Number(order.totalCost || 0), 0).toLocaleString('en-US')}</p>
                                                 <p className="text-[10px] text-slate-500 uppercase font-bold">Total Invertido</p>
                                             </div>
                                         </div>
