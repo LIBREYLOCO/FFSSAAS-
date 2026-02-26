@@ -150,7 +150,6 @@ export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerI
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nombre *</label>
                                     <input
-                                        required
                                         type="text"
                                         value={formData.name}
                                         onChange={e => setFormData({ ...formData, name: e.target.value })}
@@ -203,7 +202,6 @@ export default function AddPetToClientModal({ isOpen, onClose, onSuccess, ownerI
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Peso (Kg) *</label>
                                     <input
-                                        required
                                         type="number"
                                         step="0.01"
                                         value={formData.weightKg}
