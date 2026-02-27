@@ -2,12 +2,10 @@
 
 import { usePathname } from "next/navigation";
 import Sidebar from "./Sidebar";
+import { SessionPayload } from "@/lib/auth";
 
-export default function SidebarWrapper() {
+export default function SidebarWrapper({ user }: { user: SessionPayload | null }) {
     const pathname = usePathname();
-    const isLoginPage = pathname === "/login";
-
-    if (isLoginPage) return null;
-
-    return <Sidebar />;
+    if (pathname === "/login") return null;
+    return <Sidebar user={user} />;
 }

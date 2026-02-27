@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+    const sucursalId = request.headers.get("x-user-sucursal-id") ?? undefined;
+
     try {
         const body = await request.json();
         const { ownerId, petId, serviceType, contractId, price, serviceDate, selectedProducts } = body;
@@ -36,7 +38,8 @@ export async function POST(request: Request) {
                     totalCost: totalCost, // Decimal
                     balanceDue: totalCost, // Decimal (Assuming full amount pending)
                     status: "PENDING_PICKUP", // Default enum
-                    createdAt: serviceDate ? new Date(serviceDate) : new Date()
+                    createdAt: serviceDate ? new Date(serviceDate) : new Date(),
+                    ...(sucursalId && { sucursalId }),
                 }
             });
 

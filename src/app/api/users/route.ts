@@ -12,6 +12,8 @@ export async function GET() {
                 role: true,
                 isActive: true,
                 createdAt: true,
+                sucursalId: true,
+                sucursal: { select: { nombre: true, codigo: true } },
             },
             orderBy: { createdAt: "asc" },
         });
@@ -24,7 +26,7 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name, email, password, role } = body;
+        const { name, email, password, role, sucursalId } = body;
 
         if (!name || !email || !password) {
             return NextResponse.json({ error: "Nombre, correo y contraseña son requeridos." }, { status: 400 });
@@ -49,18 +51,23 @@ export async function POST(request: Request) {
                 password: hashed,
                 role: assignedRole,
                 isActive: true,
+                ...(sucursalId && { sucursalId }),
             },
-            select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
+            select: {
+                id: true, name: true, email: true, role: true,
+                isActive: true, createdAt: true, sucursalId: true,
+                sucursal: { select: { nombre: true, codigo: true } },
+            },
         });
 
         // Crear automáticamente el perfil Vendedor o Chofer si aplica
         if (assignedRole === "VENDEDOR") {
             await prisma.salesperson.create({
-                data: { name: user.name, level: "JUNIOR", commissionRate: 5.0 },
+                data: { name: user.name, level: "JUNIOR", commissionRate: 5.0, ...(sucursalId && { sucursalId }) },
             }).catch(() => {}); // no bloquear si ya existe
         } else if (assignedRole === "DRIVER") {
             await prisma.driver.create({
-                data: { name: user.name, isActive: true },
+                data: { name: user.name, isActive: true, ...(sucursalId && { sucursalId }) },
             }).catch(() => {});
         }
 

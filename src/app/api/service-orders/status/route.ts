@@ -53,6 +53,7 @@ export async function GET() {
             include: {
                 pet: { include: { owner: true } },
                 owner: true,
+                sesionCremacion: { include: { horno: true } },
                 trackingLogs: {
                     orderBy: { timestamp: "desc" },
                     take: 1

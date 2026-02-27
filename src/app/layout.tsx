@@ -3,7 +3,9 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import SidebarWrapper from "@/components/SidebarWrapper";
 import ThemeProvider from "@/components/ThemeProvider";
+import StarField from "@/components/StarField";
 import prisma from "@/lib/db";
+import { getSession } from "@/lib/auth";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,7 +32,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const primaryColor = await getPrimaryColor();
+  const [primaryColor, session] = await Promise.all([getPrimaryColor(), getSession()]);
   return (
     <html lang="es">
       <body
@@ -41,7 +43,8 @@ export default async function RootLayout({
         <div className="fixed bottom-0 left-0 w-[380px] h-[380px] bg-accent-500 blur-[130px] opacity-[0.07] pointer-events-none -z-10" />
         <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-brand-gold-700 blur-[180px] opacity-[0.04] pointer-events-none -z-10" />
 
-        <SidebarWrapper />
+        <StarField />
+        <SidebarWrapper user={session} />
         <ThemeProvider primaryColor={primaryColor} />
 
         <main className="flex-1 h-screen overflow-y-auto custom-scrollbar">

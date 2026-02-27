@@ -42,17 +42,21 @@ export async function POST(request: Request) {
             );
         }
 
-        // Firmar JWT con los datos del usuario
+        // Firmar JWT con los datos del usuario (incluye sucursalId si aplica)
         const token = await signToken({
             id: user.id,
             name: user.name,
             email: user.email,
             role: user.role,
+            ...(user.sucursalId && { sucursalId: user.sucursalId }),
         });
 
         const response = NextResponse.json({
             success: true,
-            user: { id: user.id, name: user.name, email: user.email, role: user.role },
+            user: {
+                id: user.id, name: user.name, email: user.email,
+                role: user.role, sucursalId: user.sucursalId ?? null,
+            },
         });
 
         response.cookies.set("aura_session", token, {

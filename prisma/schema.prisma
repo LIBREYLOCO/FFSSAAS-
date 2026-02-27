@@ -9,6 +9,66 @@ datasource db {
 }
 
 // =========================================================
+// MÓDULO 0: SUCURSALES (Multi-sede)
+// =========================================================
+
+model Sucursal {
+  id          String   @id @default(cuid())
+  nombre      String
+  codigo      String   @unique
+  direccion   String?
+  ciudad      String?
+  estado      String?
+  telefono    String?
+  email       String?
+  latitude    Float?
+  longitude   Float?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users         User[]
+  drivers       Driver[]
+  serviceOrders ServiceOrder[]
+  routes        Route[]
+  salespersons  Salesperson[]
+  products      Product[]
+  hornos        Horno[]
+}
+
+// =========================================================
+// MÓDULO 0B: HORNOS Y SESIONES DE CREMACIÓN
+// =========================================================
+
+model Horno {
+  id          String            @id @default(cuid())
+  nombre      String
+  codigo      String            @unique
+  capacidadKg Float?
+  sucursalId  String?
+  isActive    Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  sucursal    Sucursal?         @relation(fields: [sucursalId], references: [id])
+  sesiones    SesionCremacion[]
+}
+
+model SesionCremacion {
+  id                String       @id @default(cuid())
+  numeroCertificado String       @unique
+  hornoId           String
+  serviceOrderId    String       @unique
+  operadorNombre    String
+  fechaInicio       DateTime
+  fechaFin          DateTime?
+  observaciones     String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  horno             Horno        @relation(fields: [hornoId], references: [id])
+  serviceOrder      ServiceOrder @relation(fields: [serviceOrderId], references: [id])
+}
+
+// =========================================================
 // MÓDULO 1: ACTORES (Directorio)
 // =========================================================
 
@@ -77,21 +137,24 @@ model ServiceOrder {
   contractId  String?
   serviceType String
   urnId       String?
-  status      String      @default("PENDING_PICKUP") 
+  status      String      @default("PENDING_PICKUP")
   qrToken     String      @unique
   totalCost   Decimal
   balanceDue  Decimal
+  sucursalId  String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-  
+
   owner        Owner?              @relation(fields: [ownerId], references: [id])
   clinic       VeterinaryClinic?   @relation(fields: [clinicId], references: [id])
   pet          Pet                 @relation(fields: [petId], references: [id])
   contract     PrevisionContract?  @relation(fields: [contractId], references: [id])
-  products     ServiceOrderProduct[]
-  trackingLogs TrackingLog[]
-  route        Route?              @relation(fields: [routeId], references: [id])
-  routeId      String?
+  sucursal        Sucursal?           @relation(fields: [sucursalId], references: [id])
+  products        ServiceOrderProduct[]
+  trackingLogs    TrackingLog[]
+  route           Route?              @relation(fields: [routeId], references: [id])
+  routeId         String?
+  sesionCremacion SesionCremacion?
 }
 
 // =========================================================
@@ -99,21 +162,25 @@ model ServiceOrder {
 // =========================================================
 
 model Driver {
-  id           String  @id @default(cuid())
+  id           String    @id @default(cuid())
   name         String
   licensePlate String?
   phone        String?
-  isActive     Boolean @default(true)
+  isActive     Boolean   @default(true)
+  sucursalId   String?
+  sucursal     Sucursal? @relation(fields: [sucursalId], references: [id])
   routes       Route[]
 }
 
 model Route {
-  id       String         @id @default(cuid())
-  driverId String
-  date     DateTime
-  status   String
-  driver   Driver         @relation(fields: [driverId], references: [id])
-  orders   ServiceOrder[]
+  id         String         @id @default(cuid())
+  driverId   String
+  date       DateTime
+  status     String
+  sucursalId String?
+  driver     Driver         @relation(fields: [driverId], references: [id])
+  sucursal   Sucursal?      @relation(fields: [sucursalId], references: [id])
+  orders     ServiceOrder[]
 }
 
 // =========================================================
@@ -183,8 +250,10 @@ model Salesperson {
   name           String
   level          String
   commissionRate Decimal
+  sucursalId     String?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
+  sucursal       Sucursal?           @relation(fields: [sucursalId], references: [id])
   contracts      PrevisionContract[]
 }
 
@@ -200,8 +269,10 @@ model Product {
   price         Decimal
   stock         Int       @default(0)
   category      String?
+  sucursalId    String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  sucursal      Sucursal? @relation(fields: [sucursalId], references: [id])
   serviceOrders ServiceOrderProduct[]
 }
 
@@ -220,14 +291,16 @@ model ServiceOrderProduct {
 // =========================================================
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      String   @default("VENDEDOR") // ADMIN, DRIVER, VENDEDOR
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String    @id @default(cuid())
+  name       String
+  email      String    @unique
+  password   String
+  role       String    @default("VENDEDOR") // ADMIN, GERENTE_SUCURSAL, OPERADOR, DRIVER, VENDEDOR
+  isActive   Boolean   @default(true)
+  sucursalId String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  sucursal   Sucursal? @relation(fields: [sucursalId], references: [id])
 }
 
 model SystemConfig {

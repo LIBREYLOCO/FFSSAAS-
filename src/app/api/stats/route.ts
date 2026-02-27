@@ -1,14 +1,26 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { subMonths, startOfMonth, endOfMonth, format } from "date-fns";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+    const role = request.headers.get("x-user-role");
+    const headerSucursalId = request.headers.get("x-user-sucursal-id");
+    const queryParam = request.nextUrl.searchParams.get("sucursalId");
+
+    // GERENTE_SUCURSAL solo ve su sucursal; ADMIN puede filtrar opcionalmente
+    const sucursalId = role === "GERENTE_SUCURSAL"
+        ? (headerSucursalId ?? undefined)
+        : (queryParam ?? undefined);
+
+    const orderFilter = sucursalId ? { sucursalId } : {};
+
     try {
         const [ownerCount, petCount, contractCount, serviceOrders, payments] = await Promise.all([
             prisma.owner.count(),
             prisma.pet.count(),
             prisma.previsionContract.count({ where: { status: "ACTIVE" } }),
             prisma.serviceOrder.findMany({
+                where: orderFilter,
                 select: {
                     totalCost: true,
                     createdAt: true,
@@ -58,6 +70,7 @@ export async function GET() {
         return NextResponse.json({
             stats,
             recentActivity: await prisma.serviceOrder.findMany({
+                where: orderFilter,
                 take: 5,
                 orderBy: { createdAt: 'desc' },
                 include: { pet: true, owner: true }

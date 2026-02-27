@@ -17,11 +17,13 @@ import {
     Trash2,
     KeyRound,
     X,
+    Building2,
 } from "lucide-react";
 
 const TABS = [
     { id: "users", label: "Usuarios & Roles", icon: Users },
     { id: "pricing", label: "Precios & Tabuladores", icon: DollarSign },
+    { id: "sucursales", label: "Sucursales", icon: Building2 },
     { id: "system", label: "Sistema & Marca", icon: Settings },
     { id: "templates", label: "Plantillas de Contratos", icon: FileText },
     { id: "security", label: "Seguridad", icon: Shield },
@@ -389,6 +391,34 @@ export default function ConfigPage() {
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === "sucursales" && (
+                                <div className="space-y-8">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <div>
+                                            <h2 className="text-xl font-bold mb-2">Gestión de Sucursales</h2>
+                                            <p className="text-slate-500 text-xs text-balance">
+                                                Administra las sedes del crematorio. Cada sucursal tiene sus propios usuarios,
+                                                conductores e inventario.
+                                            </p>
+                                        </div>
+                                        <a href="/config/sucursales" className="btn-primary flex items-center gap-2 whitespace-nowrap">
+                                            <Building2 size={18} /> Administrar Sucursales
+                                        </a>
+                                    </div>
+                                    <div className="glass-card rounded-[32px] p-8 border border-white/5 bg-white/5 flex flex-col items-center justify-center min-h-[300px] text-center">
+                                        <Building2 size={48} className="text-brand-gold-500 mb-4 opacity-50" />
+                                        <h3 className="font-bold text-lg mb-2">Multi-Sucursal</h3>
+                                        <p className="text-sm text-slate-400 max-w-sm mb-6">
+                                            Crea y gestiona múltiples sedes. Cada gerente de sucursal solo verá
+                                            las operaciones e inventario de su sede.
+                                        </p>
+                                        <a href="/config/sucursales" className="text-brand-gold-500 font-bold text-sm tracking-widest uppercase hover:underline">
+                                            Ir a Sucursales →
+                                        </a>
                                     </div>
                                 </div>
                             )}

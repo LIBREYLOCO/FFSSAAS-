@@ -12,37 +12,60 @@ import {
     Settings,
     Menu,
     LogOut,
-    Wrench
+    Wrench,
+    Building2,
+    Flame,
 } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { SessionPayload } from "@/lib/auth";
 
 function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
+const ROLE_LABELS: Record<string, string> = {
+    ADMIN: "Administrador",
+    GERENTE_SUCURSAL: "Gerente de Sucursal",
+    OPERADOR: "Operador",
+    DRIVER: "Conductor",
+    VENDEDOR: "Vendedor",
+};
+
+// roles: qué roles pueden ver cada ítem (undefined = todos)
 const navItems = [
-    { name: "Dashboard", href: "/", icon: LayoutDashboard },
-    { name: "Clientes", href: "/clientes", icon: Users },
-    { name: "Mascotas", href: "/mascotas", icon: Dog },
-    { name: "Previsión", href: "/prevision", icon: HeartHandshake },
-    { name: "Vendedores", href: "/vendedores", icon: TrendingUp },
-    { name: "Operación", href: "/operacion", icon: Wrench },
-    { name: "Veterinarias", href: "/veterinarias", icon: MapPin },
-    { name: "Configuración", href: "/config", icon: Settings },
+    { name: "Dashboard",      href: "/",                  icon: LayoutDashboard, roles: undefined },
+    { name: "Clientes",       href: "/clientes",          icon: Users,           roles: ["ADMIN", "GERENTE_SUCURSAL", "VENDEDOR"] },
+    { name: "Mascotas",       href: "/mascotas",          icon: Dog,             roles: ["ADMIN", "GERENTE_SUCURSAL", "VENDEDOR", "OPERADOR"] },
+    { name: "Previsión",      href: "/prevision",         icon: HeartHandshake,  roles: ["ADMIN", "GERENTE_SUCURSAL", "VENDEDOR"] },
+    { name: "Vendedores",     href: "/vendedores",        icon: TrendingUp,      roles: ["ADMIN", "GERENTE_SUCURSAL"] },
+    { name: "Operación",      href: "/operacion",         icon: Wrench,          roles: ["ADMIN", "GERENTE_SUCURSAL", "OPERADOR", "DRIVER"] },
+    { name: "Hornos",         href: "/hornos",            icon: Flame,           roles: ["ADMIN", "GERENTE_SUCURSAL", "OPERADOR"] },
+    { name: "Veterinarias",   href: "/veterinarias",      icon: MapPin,          roles: ["ADMIN", "GERENTE_SUCURSAL"] },
+    { name: "Sucursales",     href: "/config/sucursales", icon: Building2,       roles: ["ADMIN"] },
+    { name: "Configuración",  href: "/config",            icon: Settings,        roles: ["ADMIN"] },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ user }: { user: SessionPayload | null }) {
     const pathname = usePathname();
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(true);
+
+    const role = user?.role ?? "";
+    const visibleItems = navItems.filter(
+        item => !item.roles || item.roles.includes(role)
+    );
 
     const handleLogout = async () => {
         await fetch("/api/auth/logout", { method: "POST" });
         router.push("/login");
     };
+
+    const initials = user?.name
+        ? user.name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()
+        : "U";
 
     return (
         <div className={cn(
@@ -98,7 +121,7 @@ export default function Sidebar() {
 
             {/* Navigation */}
             <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
-                {navItems.map((item) => {
+                {visibleItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (
                         <Link
@@ -150,15 +173,19 @@ export default function Sidebar() {
                 )}>
                     <div className="w-9 h-9 rounded-xl aura-gradient p-[1.5px] shadow-[0_2px_8px_rgba(197,160,89,0.2)] flex-shrink-0">
                         <div className="w-full h-full rounded-[10px] bg-bg-deep flex items-center justify-center font-black text-brand-gold-500 text-sm">
-                            U
+                            {initials}
                         </div>
                     </div>
 
                     {isOpen && (
                         <>
                             <div className="flex flex-col flex-1 min-w-0">
-                                <span className="text-sm font-semibold text-slate-200 truncate">Usuario Demo</span>
-                                <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Administrador</span>
+                                <span className="text-sm font-semibold text-slate-200 truncate">
+                                    {user?.name || "Usuario"}
+                                </span>
+                                <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">
+                                    {ROLE_LABELS[role] || role}
+                                </span>
                             </div>
                             <button
                                 onClick={handleLogout}

@@ -27,6 +27,7 @@ export interface SessionPayload {
     name: string;
     email: string;
     role: string;
+    sucursalId?: string;
 }
 
 export async function signToken(payload: SessionPayload): Promise<string> {

@@ -18,7 +18,8 @@ import {
   FlaskConical,
   Trash2,
   RefreshCcw,
-  CheckCircle2
+  CheckCircle2,
+  Building2,
 } from "lucide-react";
 import {
   AreaChart,
@@ -47,9 +48,12 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoMsg, setDemoMsg] = useState("");
+  const [sucursales, setSucursales] = useState<{ id: string; nombre: string; codigo: string }[]>([]);
+  const [selectedSucursal, setSelectedSucursal] = useState("");
 
-  const fetchStats = useCallback(() => {
-    fetch("/api/stats")
+  const fetchStats = useCallback((sucursalId?: string) => {
+    const url = sucursalId ? `/api/stats?sucursalId=${sucursalId}` : "/api/stats";
+    fetch(url)
       .then(res => res.json())
       .then(d => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
@@ -66,7 +70,7 @@ export default function Home() {
       });
       const result = await res.json();
       setDemoMsg(result.message || (action === "load" ? "✅ Datos cargados" : "🗑️ Datos eliminados"));
-      setTimeout(() => { setDemoMsg(""); fetchStats(); }, 3000);
+      setTimeout(() => { setDemoMsg(""); fetchStats(selectedSucursal || undefined); }, 3000);
     } catch {
       setDemoMsg("❌ Error al procesar la acción");
     } finally {
@@ -75,6 +79,19 @@ export default function Home() {
   };
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
+
+  useEffect(() => {
+    fetch("/api/sucursales")
+      .then(r => r.ok ? r.json() : [])
+      .then(d => setSucursales(Array.isArray(d) ? d.filter((s: any) => s.isActive) : []))
+      .catch(() => {});
+  }, []);
+
+  const handleSucursalChange = (id: string) => {
+    setSelectedSucursal(id);
+    setLoading(true);
+    fetchStats(id || undefined);
+  };
 
   const quickActions = [
     { label: "Seguimiento", path: "/seguimiento", icon: Search },
@@ -85,7 +102,7 @@ export default function Home() {
 
   return (
     <div className="space-y-10">
-      <header className="space-y-4">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <motion.div
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
@@ -102,6 +119,26 @@ export default function Home() {
             by Airapí • Cremación & Homenajes
           </p>
         </motion.div>
+
+        {sucursales.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 glass-card px-4 py-2.5 rounded-2xl border border-white/10"
+          >
+            <Building2 size={16} className="text-brand-gold-500 flex-shrink-0" />
+            <select
+              value={selectedSucursal}
+              onChange={(e) => handleSucursalChange(e.target.value)}
+              className="bg-transparent text-sm font-semibold text-slate-200 outline-none cursor-pointer"
+            >
+              <option value="">Todas las sucursales</option>
+              {sucursales.map(s => (
+                <option key={s.id} value={s.id}>{s.nombre} ({s.codigo})</option>
+              ))}
+            </select>
+          </motion.div>
+        )}
       </header>
 
 
