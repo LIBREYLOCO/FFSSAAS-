@@ -41,7 +41,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="relative min-h-screen w-full flex items-center justify-center overflow-hidden bg-black">
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-black">
             {/* Background Image with Overlay */}
             <div
                 className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat scale-105"
