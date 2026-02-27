@@ -1,47 +1,79 @@
 import { NextResponse } from "next/server";
+import prisma from "@/lib/db";
+import { verifyPassword, signToken } from "@/lib/auth";
 
-// Login completamente sin BD - siempre concede acceso
-// La BD se usa de forma best-effort, nunca bloquea el acceso
 export async function POST(request: Request) {
-    let email = "";
-    let name = "";
-
     try {
         const body = await request.json();
-        email = body.email || "";
-        name = body.name || "";
-    } catch {
-        // Si no se puede parsear el body, continuar con datos vacíos
-    }
+        const { email, password } = body;
 
-    const role = "VENDEDOR";
-    const sessionData = JSON.stringify({ name, email, role });
-
-    const response = NextResponse.json({
-        success: true,
-        user: { name, email, role }
-    });
-
-    response.cookies.set("aura_session", sessionData, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7,
-        path: "/"
-    });
-
-    // Intentar registrar en bitácora de forma completamente asíncrona
-    // nunca bloquea ni falla el login
-    setImmediate(async () => {
-        try {
-            const { default: prisma } = await import("@/lib/db");
-            await prisma.$connect();
-            await prisma.accessLog.create({ data: { name, email } }).catch(() => { });
-            await prisma.$disconnect();
-        } catch {
-            // Silencioso - la BD no es requerida para el acceso
+        if (!email || !password) {
+            return NextResponse.json(
+                { message: "Correo y contraseña son requeridos." },
+                { status: 400 }
+            );
         }
-    });
 
-    return response;
+        // Buscar usuario en la BD
+        const user = await prisma.user.findUnique({
+            where: { email: email.toLowerCase().trim() },
+        });
+
+        if (!user) {
+            return NextResponse.json(
+                { message: "Credenciales incorrectas." },
+                { status: 401 }
+            );
+        }
+
+        if (!user.isActive) {
+            return NextResponse.json(
+                { message: "Tu cuenta está desactivada. Contacta al administrador." },
+                { status: 403 }
+            );
+        }
+
+        // Verificar contraseña con bcrypt
+        const passwordOk = await verifyPassword(password, user.password);
+        if (!passwordOk) {
+            return NextResponse.json(
+                { message: "Credenciales incorrectas." },
+                { status: 401 }
+            );
+        }
+
+        // Firmar JWT con los datos del usuario
+        const token = await signToken({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+        });
+
+        const response = NextResponse.json({
+            success: true,
+            user: { id: user.id, name: user.name, email: user.email, role: user.role },
+        });
+
+        response.cookies.set("aura_session", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 60 * 60 * 24 * 7, // 7 días
+            path: "/",
+        });
+
+        // Registrar acceso en bitácora (best-effort)
+        prisma.accessLog
+            .create({ data: { name: user.name, email: user.email } })
+            .catch(() => {});
+
+        return response;
+    } catch (error) {
+        console.error("[auth/login]", error);
+        return NextResponse.json(
+            { message: "Error interno del servidor." },
+            { status: 500 }
+        );
+    }
 }

@@ -222,8 +222,9 @@ model User {
   id        String   @id @default(cuid())
   name      String
   email     String   @unique
-  password  String   // En producción usaría hashing
+  password  String
   role      String   @default("VENDEDOR") // ADMIN, DRIVER, VENDEDOR
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

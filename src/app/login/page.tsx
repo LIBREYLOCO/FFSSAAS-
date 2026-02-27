@@ -2,17 +2,18 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Users, Mail, ArrowRight, ShieldCheck, Heart } from "lucide-react";
+import { Mail, Lock, ArrowRight, ShieldCheck, Heart, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
-    const [name, setName] = useState("");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const router = useRouter();
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleLogin = async (e: React.SyntheticEvent) => {
         e.preventDefault();
         setLoading(true);
         setError("");
@@ -21,19 +22,19 @@ export default function LoginPage() {
             const res = await fetch("/api/auth/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, name }),
+                body: JSON.stringify({ email, password }),
             });
 
-            const data = await res.json().catch(() => ({ success: true }));
+            const data = await res.json();
 
-            if (res.ok || data.success) {
+            if (res.ok && data.success) {
                 router.push("/");
+                router.refresh();
             } else {
                 setError(data.message || "Error al iniciar sesión. Intenta de nuevo.");
             }
         } catch {
-            // Si hay error de red, igual intentar acceder
-            router.push("/");
+            setError("No se pudo conectar con el servidor. Intenta de nuevo.");
         } finally {
             setLoading(false);
         }
@@ -46,16 +47,13 @@ export default function LoginPage() {
                 className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat scale-105"
                 style={{
                     backgroundImage: "url('/login-bg.png')",
-                    filter: "brightness(0.4) saturate(1.2)"
+                    filter: "brightness(0.4) saturate(1.2)",
                 }}
             />
 
             {/* Animated Light Orbs */}
             <motion.div
-                animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [0.1, 0.2, 0.1],
-                }}
+                animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
                 transition={{ duration: 8, repeat: Infinity }}
                 className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-brand-gold-500/20 blur-[120px] rounded-full z-0"
             />
@@ -74,7 +72,12 @@ export default function LoginPage() {
                             animate={{ scale: 1 }}
                             className="inline-flex items-center justify-center w-20 h-20 rounded-[28px] bg-white/5 backdrop-blur-xl border border-white/10 mb-6 shadow-2xl"
                         >
-                            <Heart className="text-brand-gold-500" size={40} fill="currentColor" fillOpacity={0.1} />
+                            <Heart
+                                className="text-brand-gold-500"
+                                size={40}
+                                fill="currentColor"
+                                fillOpacity={0.1}
+                            />
                         </motion.div>
                         <h1 className="text-4xl font-black italic aura-gradient bg-clip-text text-transparent tracking-tighter mb-2">
                             FOREVER FRIENDS
@@ -91,19 +94,28 @@ export default function LoginPage() {
                                 <ShieldCheck size={24} />
                             </div>
                             <div>
-                                <h2 className="text-xl font-bold">Acceso Directo</h2>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Portal de Administración</p>
+                                <h2 className="text-xl font-bold">Acceso Seguro</h2>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                                    Portal de Administración
+                                </p>
                             </div>
                         </div>
 
                         <form onSubmit={handleLogin} className="space-y-6">
+                            {/* Email */}
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Correo Electrónico</label>
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">
+                                    Correo Electrónico
+                                </label>
                                 <div className="relative group">
-                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-brand-gold-500 transition-colors" size={18} />
+                                    <Mail
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-brand-gold-500 transition-colors"
+                                        size={18}
+                                    />
                                     <input
                                         type="email"
                                         required
+                                        autoComplete="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="admin@aura.lat"
@@ -112,41 +124,67 @@ export default function LoginPage() {
                                 </div>
                             </div>
 
+                            {/* Password */}
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Nombre Completo</label>
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">
+                                    Contraseña
+                                </label>
                                 <div className="relative group">
-                                    <Users className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-brand-gold-500 transition-colors" size={18} />
-                                    <input
-                                        type="text"
-                                        required
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        placeholder="Ej. Juan Pérez"
-                                        className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-12 pr-6 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50 focus:bg-white/10 transition-all placeholder:text-slate-600"
+                                    <Lock
+                                        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-brand-gold-500 transition-colors"
+                                        size={18}
                                     />
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        required
+                                        autoComplete="current-password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        placeholder="••••••••"
+                                        className="w-full bg-white/5 border border-white/5 rounded-2xl py-4 pl-12 pr-12 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50 focus:bg-white/10 transition-all placeholder:text-slate-600 font-mono tracking-widest"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                                        tabIndex={-1}
+                                    >
+                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
                                 </div>
                             </div>
 
+                            {/* Error message */}
                             {error && (
-                                <div className="text-red-400 text-xs font-bold text-center bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+                                <motion.div
+                                    initial={{ opacity: 0, y: -4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="text-red-400 text-xs font-bold text-center bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3"
+                                >
                                     {error}
-                                </div>
+                                </motion.div>
                             )}
 
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full flex items-center justify-center gap-2 py-4 bg-brand-gold-500 hover:bg-brand-gold-400 text-black font-black rounded-2xl transition-all shadow-[0_8px_32px_rgba(212,175,55,0.3)] hover:shadow-[0_12px_48_rgba(212,175,55,0.4)] hover:-translate-y-0.5 disabled:opacity-50 disabled:translate-y-0 uppercase tracking-widest text-xs"
+                                className="w-full flex items-center justify-center gap-2 py-4 bg-brand-gold-500 hover:bg-brand-gold-400 text-black font-black rounded-2xl transition-all shadow-[0_8px_32px_rgba(212,175,55,0.3)] hover:-translate-y-0.5 disabled:opacity-50 disabled:translate-y-0 uppercase tracking-widest text-xs"
                             >
-                                {loading ? "Iniciando..." : <span>Entrar al Sistema <ArrowRight size={16} className="inline ml-1" /></span>}
+                                {loading ? (
+                                    "Verificando..."
+                                ) : (
+                                    <span>
+                                        Entrar al Sistema{" "}
+                                        <ArrowRight size={16} className="inline ml-1" />
+                                    </span>
+                                )}
                             </button>
-
                         </form>
                     </div>
 
                     <p className="text-center mt-8 text-slate-500 text-[10px] font-bold uppercase tracking-widest leading-loose">
-                        Acceso exclusivo para personal autorizado.<br />
-                        © 2026 Aura Crematorio & Previsión.
+                        Acceso exclusivo para personal autorizado.
+                        <br />© 2026 Aura Crematorio & Previsión.
                     </p>
                 </motion.div>
             </div>

@@ -9,16 +9,15 @@ import {
     Shield,
     Save,
     UserPlus,
-    MoreVertical,
     CheckCircle2,
-    Palette,
     Bell,
     FileText,
     FlaskConical,
     RefreshCcw,
-    Trash2
+    Trash2,
+    KeyRound,
+    X,
 } from "lucide-react";
-// import { toast } from "sonner"; // Removed as it is not in package.json
 
 const TABS = [
     { id: "users", label: "Usuarios & Roles", icon: Users },
@@ -32,6 +31,8 @@ export default function ConfigPage() {
     const [activeTab, setActiveTab] = useState("users");
     const [loading, setLoading] = useState(false);
     const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+    const [resetPasswordModal, setResetPasswordModal] = useState<{ id: string; name: string } | null>(null);
+    const [newPassword, setNewPassword] = useState("");
 
     // State for real data from API
     const [users, setUsers] = useState<any[]>([]);
@@ -115,18 +116,78 @@ export default function ConfigPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(newUser),
             });
+            const data = await res.json();
             if (res.ok) {
                 await fetchUsers();
                 setIsAddUserModalOpen(false);
                 setNewUser({ name: "", email: "", password: "", role: "VENDEDOR" });
             } else {
-                alert("Error al crear usuario");
+                alert(data.error || "Error al crear usuario");
             }
         } catch (error) {
             console.error("Error creating user:", error);
             alert("Error de conexión");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleToggleActive = async (id: string, current: boolean) => {
+        try {
+            await fetch(`/api/users/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ isActive: !current }),
+            });
+            await fetchUsers();
+        } catch {
+            alert("Error al actualizar estado del usuario.");
+        }
+    };
+
+    const handleChangeRole = async (id: string, role: string) => {
+        try {
+            await fetch(`/api/users/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ role }),
+            });
+            await fetchUsers();
+        } catch {
+            alert("Error al cambiar rol.");
+        }
+    };
+
+    const handleResetPassword = async () => {
+        if (!resetPasswordModal || newPassword.length < 8) return;
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/users/${resetPasswordModal.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ password: newPassword }),
+            });
+            if (res.ok) {
+                setResetPasswordModal(null);
+                setNewPassword("");
+            } else {
+                const d = await res.json();
+                alert(d.error || "Error al cambiar contraseña.");
+            }
+        } catch {
+            alert("Error de conexión.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteUser = async (id: string, name: string) => {
+        if (!confirm(`¿Eliminar permanentemente a "${name}"? Esta acción no se puede deshacer.`)) return;
+        try {
+            await fetch(`/api/users/${id}`, { method: "DELETE" });
+            await fetchUsers();
+        } catch {
+            alert("Error al eliminar usuario.");
         }
     };
 
@@ -221,7 +282,10 @@ export default function ConfigPage() {
                             {activeTab === "users" && (
                                 <div className="space-y-6">
                                     <div className="flex items-center justify-between mb-8">
-                                        <h2 className="text-xl font-bold">Gestión de Personal</h2>
+                                        <div>
+                                            <h2 className="text-xl font-bold">Gestión de Personal</h2>
+                                            <p className="text-xs text-slate-500 mt-1">{users.length} usuario{users.length !== 1 ? "s" : ""} registrado{users.length !== 1 ? "s" : ""}</p>
+                                        </div>
                                         <button
                                             onClick={() => setIsAddUserModalOpen(true)}
                                             className="text-[10px] font-black bg-white/5 text-slate-300 px-4 py-2 rounded-xl hover:text-white transition-colors border border-white/5 flex items-center gap-2 uppercase tracking-widest"
@@ -230,26 +294,69 @@ export default function ConfigPage() {
                                         </button>
                                     </div>
 
-                                    <div className="space-y-4">
+                                    <div className="space-y-3">
+                                        {users.length === 0 && (
+                                            <div className="text-center py-12 text-slate-500 text-sm">
+                                                No hay usuarios. Crea el primero.
+                                            </div>
+                                        )}
                                         {users.map((user) => (
-                                            <div key={user.id} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-brand-gold-500/20 transition-all group">
+                                            <div key={user.id} className={`flex items-center justify-between p-4 rounded-2xl border transition-all group ${user.isActive ? "bg-white/5 border-white/5 hover:border-brand-gold-500/20" : "bg-white/2 border-white/5 opacity-50"}`}>
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 rounded-xl bg-brand-gold-500/10 flex items-center justify-center text-brand-gold-500">
-                                                        <Users size={24} />
+                                                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${user.isActive ? "bg-brand-gold-500/10 text-brand-gold-500" : "bg-white/5 text-slate-600"}`}>
+                                                        <Users size={22} />
                                                     </div>
                                                     <div>
-                                                        <h4 className="font-bold text-sm">{user.name}</h4>
+                                                        <div className="flex items-center gap-2">
+                                                            <h4 className="font-bold text-sm">{user.name}</h4>
+                                                            {!user.isActive && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 uppercase tracking-widest">Inactivo</span>}
+                                                        </div>
                                                         <p className="text-xs text-slate-500">{user.email}</p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-4">
-                                                    <span className={`text-[10px] font-black px-3 py-1 rounded-full ${user.role === 'ADMIN' ? 'bg-brand-gold-500/20 text-brand-gold-500' :
-                                                        user.role === 'DRIVER' ? 'bg-blue-500/20 text-blue-400' : 'bg-emerald-500/20 text-emerald-400'
-                                                        }`}>
-                                                        {user.role}
-                                                    </span>
-                                                    <button className="p-2 text-slate-600 hover:text-white transition-colors">
-                                                        <MoreVertical size={18} />
+                                                <div className="flex items-center gap-2">
+                                                    {/* Selector de rol */}
+                                                    <select
+                                                        value={user.role}
+                                                        onChange={(e) => handleChangeRole(user.id, e.target.value)}
+                                                        className={`text-[10px] font-black px-3 py-1.5 rounded-xl border appearance-none cursor-pointer focus:outline-none transition-all ${
+                                                            user.role === "ADMIN"
+                                                                ? "bg-brand-gold-500/10 border-brand-gold-500/20 text-brand-gold-500"
+                                                                : user.role === "DRIVER"
+                                                                ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                                                                : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                                                        }`}
+                                                    >
+                                                        <option value="ADMIN">ADMIN</option>
+                                                        <option value="VENDEDOR">VENDEDOR</option>
+                                                        <option value="DRIVER">DRIVER</option>
+                                                    </select>
+                                                    {/* Reset contraseña */}
+                                                    <button
+                                                        onClick={() => { setResetPasswordModal({ id: user.id, name: user.name }); setNewPassword(""); }}
+                                                        title="Cambiar contraseña"
+                                                        className="p-2 rounded-xl text-slate-500 hover:text-brand-gold-500 hover:bg-brand-gold-500/10 transition-all"
+                                                    >
+                                                        <KeyRound size={16} />
+                                                    </button>
+                                                    {/* Toggle activo/inactivo */}
+                                                    <button
+                                                        onClick={() => handleToggleActive(user.id, user.isActive)}
+                                                        title={user.isActive ? "Desactivar acceso" : "Activar acceso"}
+                                                        className={`p-2 rounded-xl transition-all ${user.isActive ? "text-emerald-400 hover:bg-emerald-500/10" : "text-red-400 hover:bg-red-500/10"}`}
+                                                    >
+                                                        {user.isActive
+                                                            ? <CheckCircle2 size={16} />
+                                                            : <X size={16} />
+                                                        }
+                                                    </button>
+                                                    {/* Eliminar */}
+                                                    <button
+                                                        onClick={() => handleDeleteUser(user.id, user.name)}
+                                                        title="Eliminar usuario"
+                                                        className="p-2 rounded-xl text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                                                    >
+                                                        <Trash2 size={16} />
                                                     </button>
                                                 </div>
                                             </div>
@@ -428,7 +535,7 @@ export default function ConfigPage() {
                     </AnimatePresence>
                 </main>
             </div>
-            {/* Simple Add User Modal Placeholder */}
+            {/* Modal: Nuevo Usuario */}
             {isAddUserModalOpen && (
                 <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
                     <motion.div
@@ -436,12 +543,17 @@ export default function ConfigPage() {
                         animate={{ scale: 1, opacity: 1 }}
                         className="glass-card p-8 rounded-[48px] border border-white/10 w-full max-w-md shadow-2xl"
                     >
-                        <h2 className="text-2xl font-bold mb-6">Nuevo Usuario</h2>
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-2xl font-bold">Nuevo Usuario</h2>
+                            <button onClick={() => setIsAddUserModalOpen(false)} className="p-2 text-slate-500 hover:text-white transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
                         <div className="space-y-4">
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nombre Completo</label>
                                 <input
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none"
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50 transition-all"
                                     placeholder="Juan Pérez"
                                     value={newUser.name}
                                     onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
@@ -450,17 +562,18 @@ export default function ConfigPage() {
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Correo Electrónico</label>
                                 <input
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none"
+                                    type="email"
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50 transition-all"
                                     placeholder="usuario@aura.lat"
                                     value={newUser.email}
                                     onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Contraseña Inicial</label>
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Contraseña Inicial (mín. 8 caracteres)</label>
                                 <input
                                     type="password"
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none font-mono"
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50 transition-all font-mono tracking-widest"
                                     placeholder="••••••••"
                                     value={newUser.password}
                                     onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
@@ -469,24 +582,70 @@ export default function ConfigPage() {
                             <div className="space-y-1">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Rol de Acceso</label>
                                 <select
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none appearance-none"
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50 transition-all appearance-none"
                                     value={newUser.role}
                                     onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                                 >
-                                    <option value="ADMIN">Administrador</option>
-                                    <option value="DRIVER">Logística / Chofer</option>
-                                    <option value="VENDEDOR">Ventas / Asesor</option>
+                                    <option value="ADMIN">Administrador — Acceso total</option>
+                                    <option value="VENDEDOR">Vendedor — Ventas y previsión</option>
+                                    <option value="DRIVER">Driver — Logística y rutas</option>
                                 </select>
                             </div>
                         </div>
                         <div className="flex gap-4 mt-8">
-                            <button onClick={() => setIsAddUserModalOpen(false)} className="flex-1 py-4 rounded-2xl bg-white/5 font-bold text-sm uppercase tracking-widest">Cancelar</button>
+                            <button onClick={() => setIsAddUserModalOpen(false)} className="flex-1 py-4 rounded-2xl bg-white/5 font-bold text-sm uppercase tracking-widest hover:bg-white/10 transition-all">
+                                Cancelar
+                            </button>
                             <button
                                 onClick={handleAddUser}
-                                disabled={loading || !newUser.name || !newUser.email || !newUser.password}
-                                className="flex-1 py-4 rounded-2xl bg-brand-gold-500 text-black font-black text-sm uppercase tracking-widest shadow-lg disabled:opacity-50"
+                                disabled={loading || !newUser.name || !newUser.email || newUser.password.length < 8}
+                                className="flex-1 py-4 rounded-2xl bg-brand-gold-500 text-black font-black text-sm uppercase tracking-widest shadow-lg disabled:opacity-40 hover:bg-brand-gold-400 transition-all"
                             >
                                 {loading ? "Creando..." : "Crear Acceso"}
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
+            {/* Modal: Reset Contraseña */}
+            {resetPasswordModal && (
+                <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="glass-card p-8 rounded-[48px] border border-white/10 w-full max-w-sm shadow-2xl"
+                    >
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-2xl bg-brand-gold-500/10 flex items-center justify-center text-brand-gold-500">
+                                <KeyRound size={20} />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-bold">Nueva Contraseña</h2>
+                                <p className="text-xs text-slate-500">{resetPasswordModal.name}</p>
+                            </div>
+                        </div>
+                        <div className="space-y-2 mb-6">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Contraseña (mín. 8 caracteres)</label>
+                            <input
+                                type="password"
+                                autoFocus
+                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50 transition-all font-mono tracking-widest"
+                                placeholder="••••••••"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex gap-4">
+                            <button onClick={() => setResetPasswordModal(null)} className="flex-1 py-4 rounded-2xl bg-white/5 font-bold text-sm uppercase tracking-widest hover:bg-white/10 transition-all">
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleResetPassword}
+                                disabled={loading || newPassword.length < 8}
+                                className="flex-1 py-4 rounded-2xl bg-brand-gold-500 text-black font-black text-sm uppercase tracking-widest disabled:opacity-40 hover:bg-brand-gold-400 transition-all"
+                            >
+                                {loading ? "Guardando..." : "Cambiar"}
                             </button>
                         </div>
                     </motion.div>

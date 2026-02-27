@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
+import { hashPassword } from "@/lib/auth";
 
 export async function GET() {
     try {
@@ -9,12 +10,14 @@ export async function GET() {
                 name: true,
                 email: true,
                 role: true,
-                createdAt: true
-            }
+                isActive: true,
+                createdAt: true,
+            },
+            orderBy: { createdAt: "asc" },
         });
         return NextResponse.json(users);
-    } catch (error) {
-        return NextResponse.json({ error: "Error fetching users" }, { status: 500 });
+    } catch {
+        return NextResponse.json({ error: "Error al obtener usuarios." }, { status: 500 });
     }
 }
 
@@ -24,39 +27,46 @@ export async function POST(request: Request) {
         const { name, email, password, role } = body;
 
         if (!name || !email || !password) {
-            return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+            return NextResponse.json({ error: "Nombre, correo y contraseña son requeridos." }, { status: 400 });
         }
+
+        if (password.length < 8) {
+            return NextResponse.json({ error: "La contraseña debe tener al menos 8 caracteres." }, { status: 400 });
+        }
+
+        const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+        if (existing) {
+            return NextResponse.json({ error: "Ya existe un usuario con ese correo." }, { status: 409 });
+        }
+
+        const hashed = await hashPassword(password);
+        const assignedRole = role || "VENDEDOR";
 
         const user = await prisma.user.create({
             data: {
                 name,
-                email,
-                password, // Nota: Debería estar hasheada
-                role: role || "VENDEDOR"
-            }
+                email: email.toLowerCase().trim(),
+                password: hashed,
+                role: assignedRole,
+                isActive: true,
+            },
+            select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
         });
 
-        // Crear automáticamente el Vendedor o Chofer si aplica
-        if (user.role === "VENDEDOR") {
+        // Crear automáticamente el perfil Vendedor o Chofer si aplica
+        if (assignedRole === "VENDEDOR") {
             await prisma.salesperson.create({
-                data: {
-                    name: user.name,
-                    level: "JUNIOR",
-                    commissionRate: 5.0
-                }
-            });
-        } else if (user.role === "DRIVER") {
+                data: { name: user.name, level: "JUNIOR", commissionRate: 5.0 },
+            }).catch(() => {}); // no bloquear si ya existe
+        } else if (assignedRole === "DRIVER") {
             await prisma.driver.create({
-                data: {
-                    name: user.name,
-                    isActive: true
-                }
-            });
+                data: { name: user.name, isActive: true },
+            }).catch(() => {});
         }
 
-        return NextResponse.json(user);
+        return NextResponse.json(user, { status: 201 });
     } catch (error) {
-        console.error("Error creating user:", error);
-        return NextResponse.json({ error: "Error creating user" }, { status: 500 });
+        console.error("[users/POST]", error);
+        return NextResponse.json({ error: "Error al crear usuario." }, { status: 500 });
     }
 }

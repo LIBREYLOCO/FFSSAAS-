@@ -1,63 +1,195 @@
 @import "tailwindcss";
 
 @theme {
+  /* --- Typography --- */
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+
+  /* --- Brand Gold --- */
   --color-brand-gold-100: #f7e7bc;
+  --color-brand-gold-200: #e8d08a;
   --color-brand-gold-500: #c5a059;
   --color-brand-gold-600: #b08d48;
   --color-brand-gold-700: #8f7239;
 
   --color-accent-500: #e6c98c;
 
-  --color-bg-deep: #1c2c3d;
-  --color-surface: rgba(28, 44, 61, 0.7);
+  /* --- Backgrounds: deeper base for visible glassmorphism --- */
+  --color-bg-deep:   #0d1a26;
+  --color-bg-mid:    #111f2d;
+  --color-bg-panel:  #162030;
+
+  /* --- Surfaces --- */
+  --color-surface:    rgba(22, 40, 58, 0.6);
+  --color-surface-hi: rgba(30, 52, 72, 0.7);
 }
 
 :root {
-  --background: #1c2c3d;
-  --foreground: #e6c5a0;
+  --background: #0d1a26;
+  --foreground: #e8d5b7;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(197, 160, 89, 0.2);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(197, 160, 89, 0.4);
 }
 
 @layer components {
+
+  /* ─── Glass Cards ──────────────────────────────────────────── */
+
   .glass-card {
-    background: rgba(30, 41, 59, 0.4);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    background: rgba(20, 40, 58, 0.55);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.45),
+      0 1px 0 rgba(255, 255, 255, 0.05) inset;
   }
+
+  .glass-card-strong {
+    background: rgba(22, 42, 62, 0.8);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(197, 160, 89, 0.14);
+    box-shadow:
+      0 16px 56px rgba(0, 0, 0, 0.55),
+      0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  }
+
+  /* ─── Brand Gradient ───────────────────────────────────────── */
 
   .aura-gradient {
     background: linear-gradient(135deg, #c5a059 0%, #e6c98c 50%, #b08d48 100%);
   }
 
+  /* ─── Buttons ──────────────────────────────────────────────── */
+
   .btn-primary {
-    background-color: #b08d48;
-    color: #1c2c3d;
+    background: linear-gradient(135deg, #c5a059 0%, #e6c98c 50%, #b08d48 100%);
+    color: #0d1a26;
     font-weight: 700;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    transition-property: all;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 200ms;
-    box-shadow: 0 0 20px rgba(197, 160, 89, 0.3);
+    font-size: 0.8125rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0.625rem 1.25rem;
+    border-radius: 0.75rem;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow:
+      0 4px 16px rgba(197, 160, 89, 0.25),
+      0 1px 0 rgba(255, 255, 255, 0.15) inset;
     cursor: pointer;
     border: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 0.5rem;
   }
 
   .btn-primary:hover {
-    background-color: #8f7239;
-    transform: scale(1.05);
+    background: linear-gradient(135deg, #d4af68 0%, #f0d89a 50%, #c09a58 100%);
+    transform: translateY(-1px);
+    box-shadow:
+      0 0 0 3px rgba(197, 160, 89, 0.15),
+      0 8px 24px rgba(197, 160, 89, 0.35);
   }
 
   .btn-primary:active {
-    transform: scale(0.95);
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(197, 160, 89, 0.2);
   }
+
+  .btn-primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* ─── Form Inputs ──────────────────────────────────────────── */
+
+  .aura-input {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #e8d5b7;
+    border-radius: 0.875rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    font-family: inherit;
+    width: 100%;
+    outline: none;
+    transition:
+      border-color 150ms ease,
+      background 150ms ease,
+      box-shadow 150ms ease;
+  }
+
+  .aura-input::placeholder {
+    color: rgba(148, 163, 184, 0.4);
+  }
+
+  .aura-input:focus {
+    border-color: rgba(197, 160, 89, 0.45);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.1);
+  }
+
+  .aura-input:hover:not(:focus) {
+    border-color: rgba(255, 255, 255, 0.13);
+  }
+
+  select.aura-input {
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23b08d48' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+  }
+
+  textarea.aura-input {
+    resize: vertical;
+    min-height: 5rem;
+  }
+
+  /* ─── Scrollbar ────────────────────────────────────────────── */
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(197, 160, 89, 0.2);
+    border-radius: 999px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(197, 160, 89, 0.45);
+  }
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(197, 160, 89, 0.2) transparent;
+  }
+
 }

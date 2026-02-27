@@ -1,26 +1,54 @@
-import { NextResponse, NextRequest } from 'next/server';
+import { NextResponse, NextRequest } from "next/server";
+import { jwtVerify } from "jose";
 
-export function middleware(request: NextRequest) {
+// Usar jose directamente aquí (Edge runtime compatible, sin bcryptjs)
+const getSecret = () =>
+    new TextEncoder().encode(
+        process.env.AUTH_SECRET || "aura-dev-secret-change-in-production"
+    );
+
+export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
-    const session = request.cookies.get('aura_session');
 
-    // Permitir todo lo que no requiere sesión
+    // Rutas públicas que no requieren sesión
     const isPublic =
-        pathname.startsWith('/login') ||
-        pathname.startsWith('/api/') ||       // Todas las APIs son libres - cada una gestiona su auth
-        pathname.startsWith('/_next') ||
-        pathname.includes('.');
+        pathname.startsWith("/login") ||
+        pathname.startsWith("/_next") ||
+        pathname.includes(".");
 
-    if (isPublic) return NextResponse.next();
+    // APIs públicas específicas (tracking por QR, logout)
+    const isPublicApi =
+        pathname.startsWith("/api/auth/login") ||
+        pathname.startsWith("/api/auth/logout") ||
+        pathname.startsWith("/api/tracking");
 
-    // Si no hay sesión, redirigir a login
-    if (!session) {
-        return NextResponse.redirect(new URL('/login', request.url));
+    if (isPublic || isPublicApi) return NextResponse.next();
+
+    const token = request.cookies.get("aura_session")?.value;
+
+    if (!token) {
+        return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    return NextResponse.next();
+    try {
+        const { payload } = await jwtVerify(token, getSecret());
+
+        // Inyectar datos del usuario en headers para que las API routes puedan leerlos
+        const requestHeaders = new Headers(request.headers);
+        requestHeaders.set("x-user-id", payload.id as string);
+        requestHeaders.set("x-user-role", payload.role as string);
+        requestHeaders.set("x-user-name", payload.name as string);
+        requestHeaders.set("x-user-email", payload.email as string);
+
+        return NextResponse.next({ request: { headers: requestHeaders } });
+    } catch {
+        // Token inválido o expirado → limpiar cookie y redirigir a login
+        const response = NextResponse.redirect(new URL("/login", request.url));
+        response.cookies.delete("aura_session");
+        return response;
+    }
 }
 
 export const config = {
-    matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+    matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

@@ -11,7 +11,6 @@ import {
     MapPin,
     Settings,
     Menu,
-    X,
     LogOut,
     Wrench
 } from "lucide-react";
@@ -47,61 +46,84 @@ export default function Sidebar() {
 
     return (
         <div className={cn(
-            "relative flex flex-col h-screen transition-all duration-300 glass-card border-r border-white/10",
-            isOpen ? "w-64" : "w-20"
+            "relative flex flex-col h-screen transition-all duration-300 glass-card-strong border-r border-white/[0.07]",
+            isOpen ? "w-64" : "w-[72px]"
         )}>
-            <div className="flex items-center justify-between p-6">
+            {/* Logo / Brand */}
+            <div className="flex items-center justify-between px-4 py-5 border-b border-white/[0.06]">
                 <AnimatePresence mode="wait">
-                    {isOpen && (
+                    {isOpen ? (
                         <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="flex flex-col"
+                            key="logo-expanded"
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -8 }}
+                            transition={{ duration: 0.18 }}
+                            className="flex items-center gap-3 min-w-0"
                         >
-                            <h1 className="text-xl font-black aura-gradient bg-clip-text text-transparent leading-tight -mb-1">
-                                FOREVER
-                            </h1>
-                            <h1 className="text-xl font-black aura-gradient bg-clip-text text-transparent leading-tight">
-                                FRIENDS
-                            </h1>
-                            <span className="text-[7px] text-brand-gold-500 font-bold tracking-[0.2em] uppercase mt-1">
-                                by Airapí
-                            </span>
+                            <div className="w-9 h-9 rounded-xl aura-gradient flex items-center justify-center flex-shrink-0 shadow-[0_4px_14px_rgba(197,160,89,0.35)]">
+                                <span className="text-[#0d1a26] text-sm font-black tracking-tight">AF</span>
+                            </div>
+                            <div className="flex flex-col leading-none min-w-0">
+                                <span className="text-[14px] font-black aura-gradient bg-clip-text text-transparent tracking-tight whitespace-nowrap">
+                                    Forever Friends
+                                </span>
+                                <span className="text-[9px] text-brand-gold-600 font-bold tracking-[0.18em] uppercase mt-0.5">
+                                    by Airapí
+                                </span>
+                            </div>
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="logo-collapsed"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ duration: 0.15 }}
+                            className="w-9 h-9 rounded-xl aura-gradient flex items-center justify-center shadow-[0_4px_14px_rgba(197,160,89,0.35)]"
+                        >
+                            <span className="text-[#0d1a26] text-sm font-black tracking-tight">AF</span>
                         </motion.div>
                     )}
                 </AnimatePresence>
+
                 <button
                     onClick={() => setIsOpen(!isOpen)}
-                    className="p-2 hover:bg-white/10 rounded-lg transition-colors text-brand-gold-500"
+                    className="p-1.5 hover:bg-white/[0.07] rounded-lg transition-colors text-slate-500 hover:text-brand-gold-500 flex-shrink-0"
+                    title={isOpen ? "Colapsar menú" : "Expandir menú"}
                 >
-                    {isOpen ? <X size={20} /> : <Menu size={20} />}
+                    <Menu size={18} />
                 </button>
             </div>
 
-            <nav className="flex-1 px-4 space-y-2">
+            {/* Navigation */}
+            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
                 {navItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (
                         <Link
                             key={item.name}
                             href={item.href}
+                            title={!isOpen ? item.name : undefined}
                             className={cn(
-                                "flex items-center gap-4 p-3 rounded-xl transition-all duration-200 group relative",
+                                "flex items-center gap-3.5 px-3 py-2.5 rounded-xl transition-all duration-200 group relative overflow-hidden",
                                 isActive
-                                    ? "bg-brand-gold-600/20 text-brand-gold-500 border border-brand-gold-500/20"
-                                    : "text-slate-400 hover:bg-white/5 hover:text-white"
+                                    ? "bg-brand-gold-600/15 text-brand-gold-400 shadow-[0_0_0_1px_rgba(197,160,89,0.18),inset_0_1px_0_rgba(255,255,255,0.05)]"
+                                    : "text-slate-500 hover:bg-white/[0.05] hover:text-slate-300"
                             )}
                         >
-                            <item.icon size={22} className={cn(
-                                "transition-colors",
-                                isActive ? "text-brand-gold-500" : "group-hover:text-white"
-                            )} />
+                            <item.icon
+                                size={20}
+                                className={cn(
+                                    "flex-shrink-0 transition-colors",
+                                    isActive ? "text-brand-gold-500" : "group-hover:text-slate-200"
+                                )}
+                            />
                             {isOpen && (
                                 <motion.span
-                                    initial={{ opacity: 0, x: -10 }}
+                                    initial={{ opacity: 0, x: -6 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    className="font-medium"
+                                    className="font-semibold text-sm truncate"
                                 >
                                     {item.name}
                                 </motion.span>
@@ -109,7 +131,10 @@ export default function Sidebar() {
                             {isActive && (
                                 <motion.div
                                     layoutId="active-pill"
-                                    className="absolute left-0 w-1 h-6 bg-brand-gold-500 rounded-r-full shadow-[0_0_10px_rgba(197,160,89,0.5)]"
+                                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-brand-gold-500 rounded-r-full"
+                                    style={{
+                                        boxShadow: "0 0 8px rgba(197, 160, 89, 0.7), 0 0 20px rgba(197, 160, 89, 0.3)"
+                                    }}
                                 />
                             )}
                         </Link>
@@ -117,26 +142,33 @@ export default function Sidebar() {
                 })}
             </nav>
 
-            <div className="p-6 border-t border-white/10">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full aura-gradient p-[2px]">
-                        <div className="w-full h-full rounded-full bg-bg-deep flex items-center justify-center font-bold">
+            {/* User Footer */}
+            <div className="px-3 pb-4 pt-3 border-t border-white/[0.06]">
+                <div className={cn(
+                    "flex items-center gap-3 p-2 rounded-2xl transition-colors",
+                    isOpen && "hover:bg-white/[0.04]"
+                )}>
+                    <div className="w-9 h-9 rounded-xl aura-gradient p-[1.5px] shadow-[0_2px_8px_rgba(197,160,89,0.2)] flex-shrink-0">
+                        <div className="w-full h-full rounded-[10px] bg-bg-deep flex items-center justify-center font-black text-brand-gold-500 text-sm">
                             U
                         </div>
                     </div>
+
                     {isOpen && (
-                        <div className="flex flex-col flex-1">
-                            <span className="text-sm font-semibold">Usuario Demo</span>
-                            <span className="text-xs text-slate-500">Administrador</span>
-                        </div>
+                        <>
+                            <div className="flex flex-col flex-1 min-w-0">
+                                <span className="text-sm font-semibold text-slate-200 truncate">Usuario Demo</span>
+                                <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">Administrador</span>
+                            </div>
+                            <button
+                                onClick={handleLogout}
+                                className="p-1.5 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                                title="Cerrar Sesión"
+                            >
+                                <LogOut size={16} />
+                            </button>
+                        </>
                     )}
-                    <button
-                        onClick={handleLogout}
-                        className="p-2 text-slate-500 hover:text-red-400 transition-colors"
-                        title="Cerrar Sesión"
-                    >
-                        <LogOut size={18} />
-                    </button>
                 </div>
             </div>
         </div>

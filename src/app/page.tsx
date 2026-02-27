@@ -191,8 +191,8 @@ export default function Home() {
                     tickFormatter={(value) => `$${value / 1000}k`}
                   />
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #ffffff10', borderRadius: '16px' }}
-                    itemStyle={{ color: '#D4AF37', fontWeight: 'bold' }}
+                    contentStyle={{ backgroundColor: '#0d1a26', border: '1px solid rgba(197,160,89,0.15)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
+                    itemStyle={{ color: '#c5a059', fontWeight: 'bold' }}
                   />
                   <Area
                     type="monotone"
@@ -236,7 +236,7 @@ export default function Home() {
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #ffffff10', borderRadius: '16px' }}
+                    contentStyle={{ backgroundColor: '#0d1a26', border: '1px solid rgba(197,160,89,0.15)', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
