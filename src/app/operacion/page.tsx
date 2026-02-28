@@ -450,6 +450,13 @@ export default function OperacionPage() {
                               </button>
                             );
                           })()}
+
+                          <Link
+                            href={`/seguimiento/${order.folio}`}
+                            className="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white transition-all mt-1"
+                          >
+                            <Search size={15} /> Ver Seguimiento Ritual
+                          </Link>
                           {!nextStatus && (
                             <div className="w-full py-3 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                               <CheckCircle2 size={16} /> Servicio Finalizado

@@ -52,10 +52,12 @@ export default function PetHistoryModal({ isOpen, onClose, pet }: Props) {
                                             <div>
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <p className="font-black text-brand-gold-500 uppercase tracking-tighter">{svc.serviceType}</p>
-                                                    <div className="flex items-center gap-1 bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">
-                                                        <span className="text-[10px] font-mono text-slate-300 font-bold">Folio: {svc.folio}</span>
-                                                        <Link href={`/seguimiento/${svc.folio}`} className="text-brand-gold-500 hover:text-white transition-all ml-1" title="Rastrear Servicio">
-                                                            <Search size={12} strokeWidth={3} />
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="flex items-center gap-2 bg-white/10 px-2.5 py-1 rounded-xl border border-white/10">
+                                                            <span className="text-[10px] font-mono text-slate-300 font-bold tracking-tighter">Folio: {svc.folio}</span>
+                                                        </div>
+                                                        <Link href={`/seguimiento/${svc.folio}`} className="w-full mt-2 py-2 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-brand-gold-500 hover:bg-brand-gold-500 hover:text-black transition-all" title="Rastrear Servicio">
+                                                            <Search size={12} strokeWidth={3} /> Ver Seguimiento
                                                         </Link>
                                                     </div>
                                                 </div>

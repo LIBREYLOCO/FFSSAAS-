@@ -20,12 +20,15 @@ import {
     Building2,
     Check,
     ImageIcon,
+    Plus,
+    Package,
 } from "lucide-react";
 import { BACKGROUNDS } from "@/lib/backgrounds";
 
 const TABS = [
     { id: "users", label: "Usuarios & Roles", icon: Users },
     { id: "pricing", label: "Precios & Tabuladores", icon: DollarSign },
+    { id: "accessories", label: "Venta de Accesorios", icon: Package },
     { id: "sucursales", label: "Sucursales", icon: Building2 },
     { id: "system", label: "Sistema & Marca", icon: Settings },
     { id: "templates", label: "Plantillas de Contratos", icon: FileText },
@@ -43,6 +46,11 @@ export default function ConfigPage() {
     const [users, setUsers] = useState<any[]>([]);
     const [sucursales, setSucursales] = useState<{ id: string; nombre: string; codigo: string }[]>([]);
     const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "VENDEDOR", sucursalId: "" });
+
+    // Accessory State
+    const [products, setProducts] = useState<any[]>([]);
+    const [showNewProduct, setShowNewProduct] = useState(false);
+    const [newProduct, setNewProduct] = useState({ name: "", price: "", stock: "", category: "ACCESSORY" });
 
     const [pricing, setPricing] = useState({
         "0-5kg": 2500,
@@ -65,6 +73,19 @@ export default function ConfigPage() {
 
     const [demoLoading, setDemoLoading] = useState(false);
     const [demoMsg, setDemoMsg] = useState("");
+
+    const fetchProducts = async () => {
+        try {
+            const res = await fetch("/api/products");
+            if (res.ok) setProducts(await res.json());
+        } catch (error) {
+            console.error("Error fetching products:", error);
+        }
+    };
+
+    useEffect(() => {
+        fetchProducts();
+    }, []);
 
     const runDemo = async (action: "load" | "clear") => {
         setDemoLoading(true);
@@ -418,6 +439,94 @@ export default function ConfigPage() {
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+                            )}
+
+                            {activeTab === "accessories" && (
+                                <div className="space-y-8">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h2 className="text-xl font-bold">Catálogo de Artículos</h2>
+                                            <p className="text-xs text-slate-500 mt-1">Gestión de urnas, reliquarios y otros accesorios disponibles.</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setShowNewProduct(true)}
+                                            className="text-[10px] font-black bg-brand-gold-500 text-black px-6 py-3 rounded-2xl hover:bg-brand-gold-400 transition-all flex items-center gap-2 uppercase tracking-widest shadow-lg shadow-brand-gold-500/10"
+                                        >
+                                            <Plus size={16} /> Nuevo Artículo
+                                        </button>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {products.length === 0 && (
+                                            <div className="col-span-full text-center py-20 bg-white/5 border border-white/10 rounded-[2.5rem] border-dashed">
+                                                <Package className="mx-auto text-slate-600 mb-4" size={48} />
+                                                <p className="text-slate-400 font-bold mb-2">No hay artículos registrados</p>
+                                                <p className="text-xs text-slate-600">Comienza agregando urnas o accesorios al inventario.</p>
+                                            </div>
+                                        )}
+                                        {products.map((product) => (
+                                            <div key={product.id} className="glass-card p-6 rounded-[2rem] border border-white/5 hover:border-brand-gold-500/30 transition-all group">
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <div className="w-12 h-12 rounded-2xl bg-brand-gold-500/10 flex items-center justify-center text-brand-gold-500 border border-brand-gold-500/20">
+                                                        <Package size={24} />
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-xl font-black italic tracking-tighter text-white">${Number(product.price).toLocaleString()}</p>
+                                                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Precio Venta</p>
+                                                    </div>
+                                                </div>
+                                                <h4 className="text-lg font-bold leading-tight mb-1">{product.name}</h4>
+                                                <div className="flex items-center gap-2 mb-4">
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-400 font-mono">{product.sku}</span>
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${product.stock > 10 ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"}`}>
+                                                        {product.stock} en stock
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Modal Nuevo Producto */}
+                                    {showNewProduct && (
+                                        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                                            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-card p-10 rounded-[3rem] border border-white/10 w-full max-w-md shadow-2xl relative text-white">
+                                                <button onClick={() => setShowNewProduct(false)} className="absolute top-8 right-8 text-slate-500 hover:text-white"><X size={24} /></button>
+                                                <div className="mb-8">
+                                                    <h2 className="text-2xl font-black italic aura-gradient bg-clip-text text-transparent">Nuevo Artículo</h2>
+                                                    <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Catálogo de Accesorios</p>
+                                                </div>
+                                                <div className="space-y-6">
+                                                    <div className="space-y-1">
+                                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nombre</label>
+                                                        <input type="text" className="w-full bg-[#0d1a26] border border-white/10 rounded-2xl py-4 px-6 text-sm" value={newProduct.name} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} placeholder="Ej. Urna Clasica" />
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="space-y-1">
+                                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Precio</label>
+                                                            <input type="number" className="w-full bg-[#0d1a26] border border-white/10 rounded-2xl py-4 px-6 text-sm" value={newProduct.price} onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} placeholder="0.00" />
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Stock</label>
+                                                            <input type="number" className="w-full bg-[#0d1a26] border border-white/10 rounded-2xl py-4 px-6 text-sm" value={newProduct.stock} onChange={e => setNewProduct({ ...newProduct, stock: e.target.value })} placeholder="0" />
+                                                        </div>
+                                                    </div>
+                                                    <button onClick={async () => {
+                                                        const res = await fetch('/api/products', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify(newProduct)
+                                                        });
+                                                        if (res.ok) {
+                                                            fetchProducts();
+                                                            setShowNewProduct(false);
+                                                            setNewProduct({ name: "", price: "", stock: "", category: "ACCESSORY" });
+                                                        }
+                                                    }} className="w-full py-4 bg-brand-gold-500 text-black font-black rounded-2xl mt-4 uppercase tracking-[0.2em] text-xs">Guardar Inventario</button>
+                                                </div>
+                                            </motion.div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
