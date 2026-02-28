@@ -97,7 +97,7 @@ export default function Home() {
     { label: "Seguimiento", path: "/seguimiento", icon: Search },
     { label: "Mapa Logística", path: "/mapa", icon: MapIcon },
     { label: "Registrar Mascota", path: "/mascotas", icon: Dog },
-    { label: "Configuración", path: "/configuracion", icon: Settings },
+    { label: "Configuración", path: "/config", icon: Settings },
   ];
 
   const statsWithConfig = (data?.stats || []).map((stat: any, index: number) => {
