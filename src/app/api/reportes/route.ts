@@ -171,7 +171,6 @@ export async function GET(req: NextRequest) {
       case "comisiones": {
         const vendedores = await prisma.salesperson.findMany({
           where: {
-            isActive: true,
             ...(salespersonId && { id: salespersonId }),
             ...(sucursalId    && { sucursalId }),
           },
