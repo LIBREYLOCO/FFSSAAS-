@@ -123,6 +123,7 @@ model VeterinaryClinic {
   referrals    PrevisionContract[]
   serviceOrders ServiceOrder[]
   referredPets  Pet[]
+  referralCommissionRate Decimal @default(0) // Fixed amount paid per referred pet
 }
 
 // =========================================================

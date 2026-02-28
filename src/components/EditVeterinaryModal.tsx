@@ -23,6 +23,7 @@ export default function EditVeterinaryModal({ isOpen, onClose, onSuccess, vet }:
         contactName: "",
         phone: "",
         fixedFee: 500,
+        referralCommissionRate: "0",
     });
     const [address, setAddress] = useState<AddressValues>(emptyAddress());
 
@@ -34,6 +35,7 @@ export default function EditVeterinaryModal({ isOpen, onClose, onSuccess, vet }:
                 contactName: vet.contactName || "",
                 phone: vet.phone || "",
                 fixedFee: vet.fixedFee || 500,
+                referralCommissionRate: vet.referralCommissionRate?.toString() || "0"
             });
             setAddress({
                 streetName: vet.streetName || "",
@@ -137,6 +139,22 @@ export default function EditVeterinaryModal({ isOpen, onClose, onSuccess, vet }:
                                             placeholder="+52 55 1234 5678"
                                         />
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* ── Referral Commission Rate ── */}
+                            <div className="border-t border-white/5 pt-6 space-y-4">
+                                <h3 className="text-sm font-bold text-slate-300">Esquema de Comisiones</h3>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Pago fijo por mascota referida ($)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={formData.referralCommissionRate}
+                                        onChange={e => setFormData({ ...formData, referralCommissionRate: e.target.value })}
+                                        className="aura-input w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-slate-200 outline-none"
+                                        placeholder="Ej. 1000"
+                                    />
                                 </div>
                             </div>
 

@@ -25,19 +25,29 @@ export async function GET(request: Request) {
                         owner: true
                     },
                     orderBy: { createdAt: 'desc' }
+                },
+                referredPets: {
+                    select: {
+                        id: true,
+                        name: true,
+                        species: true,
+                        deathDate: true,
+                        createdAt: true,
+                        owner: { select: { name: true } }
+                    }
                 }
             },
             orderBy: { businessName: 'asc' }
         });
 
         // Map and calculate commission data
-        const reportData = veterinaries.map((vet) => {
-            // No fixedFee on schema, fallback to default 500 for demonstration unless it comes from somewhere else.
-            const fixedFee = 500;
-            // Use serviceOrders instead of referrals. Only orders with status COMPLETED or similar
-            const validOrders = vet.serviceOrders.filter((order) => order.status === 'COMPLETED');
+        const reportData = veterinaries.map((vet: any) => {
+            const fixedFee = vet.referralCommissionRate ? Number(vet.referralCommissionRate) : 0;
 
-            const referralsDetail = validOrders.map((order) => {
+            // Only orders with status COMPLETED or similar generate commission
+            const validOrders = vet.serviceOrders.filter((order: any) => order.status === 'COMPLETED');
+
+            const referralsDetail = validOrders.map((order: any) => {
                 const hasActiveContract = !!order.contract;
                 const paidAmount = hasActiveContract
                     ? (order.contract!.payments || []).reduce((acc: number, p: any) =>
@@ -58,7 +68,19 @@ export async function GET(request: Request) {
                 };
             });
 
-            const totalCommission = referralsDetail.reduce((acc, r) => acc + r.commissionEarned, 0);
+            // Calculate current month's commission
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
+            const currentMonthCommission = referralsDetail
+                .filter((r: any) => {
+                    const d = new Date(r.createdAt);
+                    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+                })
+                .reduce((acc: number, r: any) => acc + r.commissionEarned, 0);
+
+            const totalCommission = referralsDetail.reduce((acc: number, r: any) => acc + r.commissionEarned, 0);
 
             return {
                 id: vet.id,
@@ -66,7 +88,9 @@ export async function GET(request: Request) {
                 fixedFee,
                 totalReferrals: validOrders.length,
                 totalCommission,
-                referralsDetail
+                currentMonthCommission,
+                referralsDetail,
+                referredPets: vet.referredPets || []
             };
         });
 

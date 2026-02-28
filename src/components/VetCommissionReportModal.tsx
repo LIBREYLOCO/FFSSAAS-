@@ -28,7 +28,16 @@ interface VetReport {
     fixedFee: number;
     totalReferrals: number;
     totalCommission: number;
+    currentMonthCommission: number;
     referralsDetail: ReferralDetail[];
+    referredPets: {
+        id: string;
+        name: string;
+        species: string;
+        deathDate: string | null;
+        createdAt: string;
+        owner: { name: string } | null;
+    }[];
 }
 
 export default function VetCommissionReportModal({ isOpen, onClose, vetId }: Props) {
@@ -200,13 +209,17 @@ export default function VetCommissionReportModal({ isOpen, onClose, vetId }: Pro
                                                             </p>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-6">
+                                                    <div className="flex flex-col sm:flex-row items-center gap-6">
                                                         <div className="text-right">
-                                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Total Comisiones</p>
+                                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Este Mes</p>
+                                                            <p className="font-bold text-brand-gold-300">{formatMXN(vet.currentMonthCommission || 0)}</p>
+                                                        </div>
+                                                        <div className="text-right hidden sm:block">
+                                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Pagado Total</p>
                                                             <p className="font-bold text-brand-gold-500">{formatMXN(vet.totalCommission)}</p>
                                                         </div>
                                                         <div className="text-right hidden sm:block">
-                                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Referencias</p>
+                                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Servicios (Completos)</p>
                                                             <p className="font-bold">{vet.totalReferrals}</p>
                                                         </div>
                                                     </div>
@@ -222,7 +235,29 @@ export default function VetCommissionReportModal({ isOpen, onClose, vetId }: Pro
                                                             className="overflow-hidden"
                                                         >
                                                             <div className="p-5 sm:p-6 bg-black/40 border-t border-white/5 space-y-3">
-                                                                <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4">Detalle de Referencias</h4>
+                                                                <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4 mt-8">Historial de Mascotas Referidas por la Clínica</h4>
+
+                                                                {(!vet.referredPets || vet.referredPets.length === 0) ? (
+                                                                    <p className="text-sm text-slate-500 italic">No hay mascotas referidas por esta clínica aún.</p>
+                                                                ) : (
+                                                                    <div className="space-y-2">
+                                                                        {vet.referredPets.map((pet) => (
+                                                                            <div key={pet.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 gap-4">
+                                                                                <div className="flex-1">
+                                                                                    <div className="flex items-center gap-3 mb-1">
+                                                                                        <p className="font-bold text-sm">{pet.name}</p>
+                                                                                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${pet.deathDate ? 'bg-brand-gold-500/10 text-brand-gold-400 border border-brand-gold-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>
+                                                                                            {pet.deathDate ? 'En Memoria' : 'Viva'}
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <p className="text-xs text-slate-500">Tutor: {pet.owner?.name || 'Incompleto'} • Registrada el {new Date(pet.createdAt).toLocaleDateString()}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+
+                                                                <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4 mt-8">Detalle de Comisiones (Servicios Completados)</h4>
 
                                                                 {vet.referralsDetail.length === 0 ? (
                                                                     <p className="text-sm text-slate-500 italic">No hay referencias con comisión (completadas) para esta clínica.</p>
@@ -237,7 +272,7 @@ export default function VetCommissionReportModal({ isOpen, onClose, vetId }: Pro
                                                                                             {ref.status}
                                                                                         </span>
                                                                                     </div>
-                                                                                    <p className="text-xs text-slate-500">Tutor: {ref.ownerName} • Registrado el {new Date(ref.createdAt).toLocaleDateString()}</p>
+                                                                                    <p className="text-xs text-slate-500">Tutor: {ref.ownerName} • Servicio {new Date(ref.createdAt).toLocaleDateString()}</p>
                                                                                 </div>
                                                                                 <div className="flex flex-col sm:items-end flex-shrink-0">
                                                                                     <p className="text-[10px] uppercase font-bold text-slate-400 mb-1">Comisión Generada</p>
