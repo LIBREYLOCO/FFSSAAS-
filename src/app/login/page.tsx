@@ -70,14 +70,16 @@ export default function LoginPage() {
                         <motion.div
                             initial={{ scale: 0.8 }}
                             animate={{ scale: 1 }}
-                            className="inline-flex items-center justify-center w-20 h-20 rounded-[28px] bg-white/5 backdrop-blur-xl border border-white/10 mb-6 shadow-2xl"
+                            className="relative inline-flex items-center justify-center w-28 h-28 mb-6 group"
                         >
-                            <Heart
-                                className="text-brand-gold-500"
-                                size={40}
-                                fill="currentColor"
-                                fillOpacity={0.1}
-                            />
+                            <div className="absolute -inset-4 bg-brand-gold-500/20 blur-2xl rounded-full opacity-50 group-hover:opacity-100 transition-opacity duration-1000 animate-pulse" />
+                            <div className="relative z-10 w-full h-full rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 flex items-center justify-center shadow-2xl overflow-hidden p-4">
+                                <img
+                                    src="/logo.png"
+                                    alt="AURA Memorial"
+                                    className="w-full h-full object-contain drop-shadow-[0_0_12px_rgba(197,160,89,0.5)]"
+                                />
+                            </div>
                         </motion.div>
                         <h1 className="text-4xl font-black italic aura-gradient bg-clip-text text-transparent tracking-tighter mb-2">
                             FOREVER FRIENDS

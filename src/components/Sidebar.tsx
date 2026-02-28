@@ -35,15 +35,15 @@ const ROLE_LABELS: Record<string, string> = {
 
 // roles: qué roles pueden ver cada ítem (undefined = todos)
 const navItems = [
-    { name: "Dashboard",      href: "/",                  icon: LayoutDashboard, roles: undefined },
-    { name: "Clientes",       href: "/clientes",          icon: Users,           roles: ["ADMIN", "GERENTE_SUCURSAL", "VENDEDOR"] },
-    { name: "Mascotas",       href: "/mascotas",          icon: Dog,             roles: ["ADMIN", "GERENTE_SUCURSAL", "VENDEDOR", "OPERADOR"] },
-    { name: "Previsión",      href: "/prevision",         icon: HeartHandshake,  roles: ["ADMIN", "GERENTE_SUCURSAL", "VENDEDOR"] },
-    { name: "Vendedores",     href: "/vendedores",        icon: TrendingUp,      roles: ["ADMIN", "GERENTE_SUCURSAL"] },
-    { name: "Operación",      href: "/operacion",         icon: Wrench,          roles: ["ADMIN", "GERENTE_SUCURSAL", "OPERADOR", "DRIVER"] },
-    { name: "Veterinarias",   href: "/veterinarias",      icon: MapPin,          roles: ["ADMIN", "GERENTE_SUCURSAL"] },
-    { name: "Sucursales",     href: "/config/sucursales", icon: Building2,       roles: ["ADMIN"] },
-    { name: "Configuración",  href: "/config",            icon: Settings,        roles: ["ADMIN"] },
+    { name: "Dashboard", href: "/", icon: LayoutDashboard, roles: undefined },
+    { name: "Clientes", href: "/clientes", icon: Users, roles: ["ADMIN", "GERENTE_SUCURSAL", "VENDEDOR"] },
+    { name: "Mascotas", href: "/mascotas", icon: Dog, roles: ["ADMIN", "GERENTE_SUCURSAL", "VENDEDOR", "OPERADOR"] },
+    { name: "Previsión", href: "/prevision", icon: HeartHandshake, roles: ["ADMIN", "GERENTE_SUCURSAL", "VENDEDOR"] },
+    { name: "Vendedores", href: "/vendedores", icon: TrendingUp, roles: ["ADMIN", "GERENTE_SUCURSAL"] },
+    { name: "Operación", href: "/operacion", icon: Wrench, roles: ["ADMIN", "GERENTE_SUCURSAL", "OPERADOR", "DRIVER"] },
+    { name: "Veterinarias", href: "/veterinarias", icon: MapPin, roles: ["ADMIN", "GERENTE_SUCURSAL"] },
+    { name: "Sucursales", href: "/config/sucursales", icon: Building2, roles: ["ADMIN"] },
+    { name: "Configuración", href: "/config", icon: Settings, roles: ["ADMIN"] },
 ];
 
 export default function Sidebar({ user }: { user: SessionPayload | null }) {
@@ -82,8 +82,13 @@ export default function Sidebar({ user }: { user: SessionPayload | null }) {
                             transition={{ duration: 0.18 }}
                             className="flex items-center gap-3 min-w-0"
                         >
-                            <div className="w-9 h-9 rounded-xl aura-gradient flex items-center justify-center flex-shrink-0 shadow-[0_4px_14px_rgba(197,160,89,0.35)]">
-                                <span className="text-[#0d1a26] text-sm font-black tracking-tight">AF</span>
+                            <div className="relative group/logo">
+                                <div className="absolute -inset-1 bg-brand-gold-500/20 blur-md rounded-full opacity-0 group-hover/logo:opacity-100 transition-opacity" />
+                                <img
+                                    src="/logo.png"
+                                    alt="AURA Logo"
+                                    className="w-10 h-10 object-contain relative z-10 drop-shadow-[0_0_8px_rgba(197,160,89,0.3)]"
+                                />
                             </div>
                             <div className="flex flex-col leading-none min-w-0">
                                 <span className="text-[14px] font-black aura-gradient bg-clip-text text-transparent tracking-tight whitespace-nowrap">
@@ -101,9 +106,14 @@ export default function Sidebar({ user }: { user: SessionPayload | null }) {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.8 }}
                             transition={{ duration: 0.15 }}
-                            className="w-9 h-9 rounded-xl aura-gradient flex items-center justify-center shadow-[0_4px_14px_rgba(197,160,89,0.35)]"
+                            className="relative group/logo"
                         >
-                            <span className="text-[#0d1a26] text-sm font-black tracking-tight">AF</span>
+                            <div className="absolute -inset-1 bg-brand-gold-500/20 blur-md rounded-full opacity-0 group-hover/logo:opacity-100 transition-opacity" />
+                            <img
+                                src="/logo.png"
+                                alt="AURA Logo"
+                                className="w-10 h-10 object-contain relative z-10 drop-shadow-[0_0_8px_rgba(197,160,89,0.3)]"
+                            />
                         </motion.div>
                     )}
                 </AnimatePresence>

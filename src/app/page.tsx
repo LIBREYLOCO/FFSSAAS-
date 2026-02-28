@@ -118,21 +118,33 @@ export default function Home() {
           animate={{ opacity: 1, x: 0 }}
           className="relative group"
         >
-          <div className="absolute -inset-4 bg-brand-gold-500/10 blur-[50px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+          <div className="absolute -inset-8 bg-brand-gold-500/10 blur-[60px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
           <div className="relative">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-px w-10 bg-brand-gold-500/50" />
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-gold-500/60">
-                Aura Management Terminal
-              </span>
+            <div className="flex items-center gap-6 mb-6">
+              <div className="relative">
+                <div className="absolute -inset-2 bg-brand-gold-500/20 blur-xl rounded-full animate-pulse" />
+                <img
+                  src="/logo.png"
+                  alt="AURA"
+                  className="w-20 h-20 object-contain relative z-10 drop-shadow-[0_0_15px_rgba(197,160,89,0.4)]"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <div className="h-px w-6 bg-brand-gold-500/50" />
+                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-gold-500/60">
+                    Management Terminal
+                  </span>
+                </div>
+                <h1 className="text-6xl lg:text-7xl font-black tracking-tighter leading-none">
+                  <span className="aura-gradient bg-clip-text text-transparent">FOREVER</span>
+                  <br />
+                  <span className="aura-gradient bg-clip-text text-transparent italic opacity-90">FRIENDS</span>
+                </h1>
+              </div>
             </div>
-            <h1 className="text-6xl lg:text-7xl font-black tracking-tighter leading-none">
-              <span className="aura-gradient bg-clip-text text-transparent">FOREVER</span>
-              <br />
-              <span className="aura-gradient bg-clip-text text-transparent italic opacity-90">FRIENDS</span>
-            </h1>
-            <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.2em] mt-3 flex items-center gap-2">
-              SISTEMA DE GESTIÓN <span className="w-1.5 h-1.5 rounded-full bg-brand-gold-500 animate-pulse" /> V1.0.4
+            <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] pl-1 flex items-center gap-2">
+              SISTEMA DE GESTIÓN DE CREMACIÓN <span className="w-1.5 h-1.5 rounded-full bg-brand-gold-500 animate-pulse" /> V1.2.0
             </p>
           </div>
         </motion.div>
