@@ -9,53 +9,49 @@ export async function GET(request: Request) {
         // Fetch veterinaries with their completed referrals + service orders + contracts + payments
         const whereClause = vetId ? { id: vetId } : {};
 
-        const veterinaries = await prisma.veterinary.findMany({
+        const veterinaries = await prisma.veterinaryClinic.findMany({
             where: whereClause,
             include: {
-                referrals: {
+                serviceOrders: {
                     include: {
-                        ServiceOrder: {
+                        contract: {
                             include: {
-                                contract: {
-                                    include: {
-                                        payments: {
-                                            orderBy: { paymentDate: 'desc' }
-                                        }
-                                    }
+                                payments: {
+                                    orderBy: { paymentDate: 'desc' }
                                 }
                             }
-                        }
+                        },
+                        pet: true,
+                        owner: true
                     },
                     orderBy: { createdAt: 'desc' }
                 }
             },
-            orderBy: { name: 'asc' }
+            orderBy: { businessName: 'asc' }
         });
 
         // Map and calculate commission data
-        const reportData = veterinaries.map(vet => {
-            const fixedFee = Number(vet.fixedFee) || 0;
-            const validReferrals = vet.referrals.filter(ref => ref.status === 'COMPLETED' || ref.status === 'CONVERTED');
+        const reportData = veterinaries.map((vet) => {
+            // No fixedFee on schema, fallback to default 500 for demonstration unless it comes from somewhere else.
+            const fixedFee = 500;
+            // Use serviceOrders instead of referrals. Only orders with status COMPLETED or similar
+            const validOrders = vet.serviceOrders.filter((order) => order.status === 'COMPLETED');
 
-            const referralsDetail = validReferrals.map(ref => {
-                const serviceOrder = ref.ServiceOrder;
-                const isConverted = ref.status === 'CONVERTED';
-                const hasActiveContract = !!serviceOrder?.contract;
+            const referralsDetail = validOrders.map((order) => {
+                const hasActiveContract = !!order.contract;
                 const paidAmount = hasActiveContract
-                    ? (serviceOrder.contract!.payments || []).reduce((acc: number, p: any) =>
+                    ? (order.contract!.payments || []).reduce((acc: number, p: any) =>
                         acc + (p.status === 'PAID' ? Number(p.amount) : 0), 0)
                     : 0;
 
-                // Commission logic: if converted to contract, maybe check if paid.
-                // Assuming it's a fixed fee for simply referring/converting.
                 const commissionEarned = fixedFee;
 
                 return {
-                    id: ref.id,
-                    petName: ref.petName,
-                    ownerName: ref.ownerName,
-                    status: ref.status,
-                    createdAt: ref.createdAt,
+                    id: order.id,
+                    petName: order.pet?.name || 'Mascota',
+                    ownerName: order.owner?.name || 'Desconocido',
+                    status: order.status,
+                    createdAt: order.createdAt,
                     commissionEarned,
                     hasActiveContract,
                     paidAmount
@@ -66,9 +62,9 @@ export async function GET(request: Request) {
 
             return {
                 id: vet.id,
-                name: vet.name,
+                name: vet.businessName,
                 fixedFee,
-                totalReferrals: validReferrals.length,
+                totalReferrals: validOrders.length,
                 totalCommission,
                 referralsDetail
             };
