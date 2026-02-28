@@ -4,11 +4,16 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { MapPin, Plus, Stethoscope, Heart, Info } from "lucide-react";
 import RegisterVeterinaryModal from "@/components/RegisterVeterinaryModal";
+import EditVeterinaryModal from "@/components/EditVeterinaryModal";
+import VetCommissionReportModal from "@/components/VetCommissionReportModal";
 
 export default function VeterinariasPage() {
     const [veterinaries, setVeterinaries] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingVet, setEditingVet] = useState<any | null>(null);
+    const [reportVetId, setReportVetId] = useState<string | null>(null);
+    const [globalReportMode, setGlobalReportMode] = useState(false);
 
     const fetchVeterinaries = () => {
         setLoading(true);
@@ -36,13 +41,21 @@ export default function VeterinariasPage() {
                     <h2 className="text-3xl font-bold italic tracking-tight">Red de Veterinarias</h2>
                     <p className="text-slate-400">Convenios con clínicas y especialistas locales.</p>
                 </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="btn-primary flex items-center gap-2 w-fit"
-                >
-                    <Plus size={20} />
-                    Nueva Veterinaria
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setGlobalReportMode(true)}
+                        className="btn-secondary flex items-center gap-2 w-fit"
+                    >
+                        Reporte Global de Comisiones
+                    </button>
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="btn-primary flex items-center gap-2 w-fit"
+                    >
+                        <Plus size={20} />
+                        Nueva Veterinaria
+                    </button>
+                </div>
             </header>
 
             <RegisterVeterinaryModal
@@ -102,17 +115,38 @@ export default function VeterinariasPage() {
                             </div>
 
                             <div className="mt-6 pt-6 flex gap-2">
-                                <button className="flex-1 py-3 rounded-xl bg-brand-gold-600/10 hover:bg-brand-gold-600/20 transition-colors text-xs font-bold uppercase tracking-widest text-brand-gold-500">
+                                <button
+                                    onClick={() => setEditingVet(vet)}
+                                    className="flex-1 py-3 rounded-xl bg-brand-gold-600/10 hover:bg-brand-gold-600/20 transition-colors text-xs font-bold uppercase tracking-widest text-brand-gold-500"
+                                >
                                     Editar
                                 </button>
-                                <button className="p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-slate-400">
-                                    <Info size={18} />
+                                <button
+                                    onClick={() => setReportVetId(vet.id)}
+                                    className="px-6 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-xs font-bold uppercase tracking-widest text-slate-300"
+                                >
+                                    Ver Comisiones
                                 </button>
                             </div>
                         </motion.div>
                     ))
                 )}
             </div>
+
+            <EditVeterinaryModal
+                isOpen={!!editingVet}
+                onClose={() => setEditingVet(null)}
+                onSuccess={fetchVeterinaries}
+                vet={editingVet}
+            />
+
+            {(reportVetId || globalReportMode) && (
+                <VetCommissionReportModal
+                    isOpen={true}
+                    onClose={() => { setReportVetId(null); setGlobalReportMode(false); }}
+                    vetId={reportVetId}
+                />
+            )}
         </div>
     );
 }
