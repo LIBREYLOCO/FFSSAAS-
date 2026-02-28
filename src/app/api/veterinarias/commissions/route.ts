@@ -33,7 +33,18 @@ export async function GET(request: Request) {
                         species: true,
                         deathDate: true,
                         createdAt: true,
-                        owner: { select: { name: true } }
+                        owner: { select: { name: true } },
+                        services: {
+                            include: {
+                                contract: {
+                                    include: {
+                                        payments: { orderBy: { paymentDate: 'desc' } }
+                                    }
+                                },
+                                owner: true
+                            },
+                            where: { status: 'COMPLETED' }
+                        }
                     }
                 }
             },
@@ -44,8 +55,13 @@ export async function GET(request: Request) {
         const reportData = veterinaries.map((vet: any) => {
             const fixedFee = vet.referralCommissionRate ? Number(vet.referralCommissionRate) : 0;
 
-            // Only orders with status COMPLETED or similar generate commission
-            const validOrders = vet.serviceOrders.filter((order: any) => order.status === 'COMPLETED');
+            // Gather all completed service orders from the referred pets
+            const validOrders = (vet.referredPets || []).flatMap((pet: any) =>
+                (pet.services || []).map((order: any) => ({
+                    ...order,
+                    pet: pet // attach the pet info so the UI mapping works
+                }))
+            );
 
             const referralsDetail = validOrders.map((order: any) => {
                 const hasActiveContract = !!order.contract;
