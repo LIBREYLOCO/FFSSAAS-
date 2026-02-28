@@ -46,7 +46,7 @@ export async function PATCH(
             data: {
                 ...(name !== undefined && { name }),
                 ...(level !== undefined && { level }),
-                ...(commissionRate !== undefined && { commissionRate: Number(commissionRate) }),
+                ...(commissionRate !== undefined && { commissionRate: Number(String(commissionRate).replace(',', '.')) || 0 }),
                 ...(phone !== undefined && { phone }),
                 ...(email !== undefined && { email }),
                 ...(photoUrl !== undefined && { photoUrl }),
