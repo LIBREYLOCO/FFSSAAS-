@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
     User, Dog, HeartHandshake, Calendar, Phone, Mail, MapPin,
@@ -19,6 +19,7 @@ import { formatMXN } from "@/lib/format";
 export default function ClientDetailPage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [owner, setOwner] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
@@ -45,6 +46,13 @@ export default function ClientDetailPage() {
     useEffect(() => {
         fetchOwner();
     }, [params.id]);
+
+    // Automatically open the New Order modal if url has ?newOrder=true
+    useEffect(() => {
+        if (!loading && owner && searchParams?.get('newOrder') === 'true') {
+            setIsOrderModalOpen(true);
+        }
+    }, [loading, owner, searchParams]);
 
     const handleUpdateStatus = async (orderId: string, newStatus: string) => {
         setUpdatingStatus(orderId);
@@ -447,6 +455,7 @@ export default function ClientDetailPage() {
                 onClose={() => setIsOrderModalOpen(false)}
                 owner={owner}
                 onSuccess={fetchOwner}
+                initialPetId={searchParams?.get('petId') || undefined}
             />
 
             <AddPetToClientModal

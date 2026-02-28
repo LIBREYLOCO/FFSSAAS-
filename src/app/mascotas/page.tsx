@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Dog, Search, User, Calendar, Plus, Edit2, FileText, Activity } from "lucide-react";
 import RegisterPetModal from "@/components/RegisterPetModal";
 import EditPetModal from "@/components/EditPetModal";
+import PetHistoryModal from "@/components/PetHistoryModal";
 import Link from "next/link";
 
 export default function MascotasPage() {
@@ -13,7 +14,9 @@ export default function MascotasPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
     const [selectedPetToEdit, setSelectedPetToEdit] = useState<any>(null);
+    const [selectedPetForHistory, setSelectedPetForHistory] = useState<any>(null);
 
     const fetchPets = () => {
         setLoading(true);
@@ -67,6 +70,12 @@ export default function MascotasPage() {
                 onClose={() => setIsEditModalOpen(false)}
                 onSuccess={fetchPets}
                 pet={selectedPetToEdit}
+            />
+
+            <PetHistoryModal
+                isOpen={isHistoryModalOpen}
+                onClose={() => setIsHistoryModalOpen(false)}
+                pet={selectedPetForHistory}
             />
 
             <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
@@ -129,19 +138,26 @@ export default function MascotasPage() {
                                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3 rounded-2xl">
                                     <button
                                         onClick={() => {
-                                            setSelectedPetToEdit(pet);
-                                            setIsEditModalOpen(true);
+                                            setSelectedPetForHistory(pet);
+                                            setIsHistoryModalOpen(true);
                                         }}
                                         className="px-4 py-2 bg-brand-gold-500 text-bg-deep font-bold text-xs uppercase tracking-widest rounded-xl hover:scale-105 transition-transform flex items-center gap-2"
                                     >
                                         <Activity size={14} /> Ver Historial
                                     </button>
-                                    <Link
-                                        href={`/operacion?newOrder=true&petId=${pet.id}`}
+                                    <button
+                                        onClick={(e) => {
+                                            if (!pet.owner?.id) {
+                                                alert("Esta mascota no tiene un dueño asignado aún.");
+                                                e.preventDefault();
+                                                return;
+                                            }
+                                            window.location.href = `/clientes/${pet.owner.id}?newOrder=true&petId=${pet.id}`;
+                                        }}
                                         className="px-4 py-2 bg-white/10 text-white font-bold text-xs uppercase tracking-widest rounded-xl hover:bg-white/20 transition-colors flex items-center gap-2 border border-white/20"
                                     >
                                         <FileText size={14} /> Nueva Orden
-                                    </Link>
+                                    </button>
                                 </div>
                             </div>
 

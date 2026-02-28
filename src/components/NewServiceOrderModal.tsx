@@ -14,14 +14,15 @@ interface NewServiceOrderModalProps {
     onClose: () => void;
     owner: any;
     onSuccess: () => void;
+    initialPetId?: string;
 }
 
-export default function NewServiceOrderModal({ isOpen, onClose, owner, onSuccess }: NewServiceOrderModalProps) {
+export default function NewServiceOrderModal({ isOpen, onClose, owner, onSuccess, initialPetId }: NewServiceOrderModalProps) {
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState(1);
     const [serviceType, setServiceType] = useState<"IMMEDIATE" | "PREVISION" | null>(null);
     const [formData, setFormData] = useState({
-        petId: "",
+        petId: initialPetId || "",
         contractId: owner?.contracts?.[0]?.id || "",
         price: 3500,
         serviceDate: new Date().toISOString().split('T')[0]
