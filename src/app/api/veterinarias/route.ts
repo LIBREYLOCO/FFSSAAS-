@@ -56,6 +56,7 @@ export async function POST(request: Request) {
                 zipCode: zipCode || null,
                 latitude: latitude ? parseFloat(latitude) : null,
                 longitude: longitude ? parseFloat(longitude) : null,
+                referralCommissionRate: fixedFee ? parseFloat(fixedFee.toString()) : 0,
             }
         });
 
