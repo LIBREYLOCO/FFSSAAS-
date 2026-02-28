@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, Plus, Award, DollarSign, Target } from "lucide-react";
+import { TrendingUp, Plus, Target, Edit2 } from "lucide-react";
 import RegisterSalespersonModal from "@/components/RegisterSalespersonModal";
+import EditSalespersonModal from "@/components/EditSalespersonModal";
 
 export default function VendedoresPage() {
     const [salespeople, setSalespeople] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingPerson, setEditingPerson] = useState<any | null>(null);
 
     const fetchSalespeople = () => {
         setLoading(true);
@@ -75,6 +77,15 @@ export default function VendedoresPage() {
                                 <Target size={80} />
                             </div>
 
+                            {/* Edit button */}
+                            <button
+                                onClick={() => setEditingPerson(person)}
+                                className="absolute top-4 right-4 z-10 p-2 rounded-xl bg-white/5 hover:bg-brand-gold-500/20 text-slate-500 hover:text-brand-gold-500 border border-transparent hover:border-brand-gold-500/30 transition-all"
+                                title="Editar vendedor"
+                            >
+                                <Edit2 size={14} />
+                            </button>
+
                             <div className="flex items-center gap-4 mb-4">
                                 <div className="w-12 h-12 rounded-2xl bg-brand-gold-500/10 flex items-center justify-center text-brand-gold-500 font-bold text-xl">
                                     {person.name.charAt(0)}
@@ -114,6 +125,12 @@ export default function VendedoresPage() {
                     ))
                 )}
             </div>
+            <EditSalespersonModal
+                isOpen={!!editingPerson}
+                onClose={() => setEditingPerson(null)}
+                onSuccess={fetchSalespeople}
+                person={editingPerson}
+            />
         </div>
     );
 }

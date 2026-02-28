@@ -273,6 +273,20 @@ model Salesperson {
   level          String
   commissionRate Decimal
   sucursalId     String?
+  // Contact info
+  phone          String?
+  email          String?
+  // Structured address
+  streetName     String?
+  streetNumber   String?
+  interiorNum    String?
+  neighborhood   String?
+  city           String?
+  state          String?
+  country        String?
+  zipCode        String?
+  latitude       Float?
+  longitude      Float?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
   sucursal       Sucursal?           @relation(fields: [sucursalId], references: [id])
