@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { formatMXN } from "@/lib/format";
 
 interface Product {
     id: string;
@@ -211,7 +212,7 @@ export default function InventoryPage() {
                                         <div className="flex flex-col">
                                             <span className="text-[10px] font-bold text-slate-500 uppercase">Precio</span>
                                             <span className="text-lg font-black text-brand-gold-500">
-                                                ${product.price.toLocaleString()}
+                                                {formatMXN(product.price)}
                                             </span>
                                         </div>
                                         <div className="flex flex-col text-right">

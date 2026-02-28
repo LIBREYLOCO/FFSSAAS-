@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, HeartHandshake, User, DollarSign, Loader2, Search, Briefcase } from "lucide-react";
 import { generatePrevisionContractPDF } from "@/lib/pdfGenerator";
+import { formatMXN } from "@/lib/format";
 
 interface Props {
     isOpen: boolean;
@@ -189,7 +190,7 @@ export default function RegisterContractModal({ isOpen, onClose, onSuccess }: Pr
                                         >
                                             <option value="">Selecciona un plan</option>
                                             {plans.map(plan => (
-                                                <option key={plan.id} value={plan.id}>{plan.name} (${plan.price})</option>
+                                                <option key={plan.id} value={plan.id}>{plan.name} ({formatMXN(plan.price)})</option>
                                             ))}
                                         </select>
                                     </div>
@@ -231,11 +232,11 @@ export default function RegisterContractModal({ isOpen, onClose, onSuccess }: Pr
                                 >
                                     <div>
                                         <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold-500 mb-1">Resumen de Pago</p>
-                                        <h4 className="text-xl font-bold">${remaining.toLocaleString()} restante</h4>
+                                        <h4 className="text-xl font-bold">{formatMXN(remaining)} restante</h4>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold-500 mb-1">Cuotas Mensuales</p>
-                                        <h4 className="text-xl font-bold">{selectedPlan.installmentsCount} cuotas de ${installments.toFixed(2)}</h4>
+                                        <h4 className="text-xl font-bold">{selectedPlan.installmentsCount} cuotas de {formatMXN(installments)}</h4>
                                     </div>
                                 </motion.div>
                             )}

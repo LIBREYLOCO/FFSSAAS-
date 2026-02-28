@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, DollarSign, Loader2, Calendar, CheckCircle2, History } from "lucide-react";
+import { formatMXN } from "@/lib/format";
 
 interface Props {
     isOpen: boolean;
@@ -92,7 +93,7 @@ export default function PaymentHistoryModal({ isOpen, onClose, contract, onSucce
                                                     </p>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="font-bold text-emerald-500">${payment.amount.toLocaleString()}</p>
+                                                    <p className="font-bold text-emerald-500">{formatMXN(payment.amount)}</p>
                                                     <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500/50">Pagado</span>
                                                 </div>
                                             </div>

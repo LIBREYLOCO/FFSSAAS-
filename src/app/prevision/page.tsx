@@ -8,6 +8,7 @@ import RegisterContractModal from "@/components/RegisterContractModal";
 import PaymentHistoryModal from "@/components/PaymentHistoryModal";
 import ManagePlansModal from "@/components/ManagePlansModal";
 import { generatePrevisionContractPDF } from "@/lib/pdfGenerator";
+import { formatMXN } from "@/lib/format";
 
 export default function PrevisionPage() {
     const [contracts, setContracts] = useState<any[]>([]);
@@ -152,9 +153,9 @@ export default function PrevisionPage() {
 
                                 <div className="space-y-1">
                                     <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Plan & Financiamiento</p>
-                                    <p className="text-sm">Total: <span className="font-bold">${contract.plan.price}</span></p>
+                                    <p className="text-sm">Total: <span className="font-bold">{formatMXN(contract.plan.price)}</span></p>
                                     <p className="text-xs text-slate-400">
-                                        Enganche: ${contract.downPayment} + {contract.plan.installmentsCount} cuotas de ${Number(contract.installmentAmount).toFixed(2)}
+                                        Enganche: {formatMXN(contract.downPayment)} + {contract.plan.installmentsCount} cuotas de {formatMXN(contract.installmentAmount)}
                                     </p>
                                 </div>
 
@@ -170,7 +171,7 @@ export default function PrevisionPage() {
                                             className="h-full aura-gradient shadow-[0_0_10px_rgba(197,160,89,0.5)]"
                                         />
                                     </div>
-                                    <p className="text-[10px] text-slate-400 text-right">Pagado: ${paidAmount} de ${contract.plan.price}</p>
+                                    <p className="text-[10px] text-slate-400 text-right">Pagado: {formatMXN(paidAmount)} de {formatMXN(contract.plan.price)}</p>
                                 </div>
 
                                 <div className="flex flex-col items-end gap-3 mt-4 md:mt-0">

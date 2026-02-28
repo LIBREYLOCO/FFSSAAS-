@@ -14,6 +14,7 @@ import RegisterPaymentModal from "@/components/RegisterPaymentModal";
 import EditPetModal from "@/components/EditPetModal";
 import EditClientModal from "@/components/EditClientModal";
 import { Edit2 } from "lucide-react";
+import { formatMXN } from "@/lib/format";
 
 export default function ClientDetailPage() {
     const params = useParams();
@@ -320,7 +321,7 @@ export default function ClientDetailPage() {
                                                 <p className="text-[10px] text-slate-500 uppercase font-bold">Servicios Utilizados</p>
                                             </div>
                                             <div>
-                                                <p className="text-2xl font-black">${(owner.serviceOrders || []).reduce((acc: number, order: any) => acc + Number(order.totalCost || 0), 0).toLocaleString('en-US')}</p>
+                                                <p className="text-2xl font-black">{formatMXN((owner.serviceOrders || []).reduce((acc: number, order: any) => acc + Number(order.totalCost || 0), 0))}</p>
                                                 <p className="text-[10px] text-slate-500 uppercase font-bold">Total Invertido</p>
                                             </div>
                                         </div>
@@ -428,7 +429,7 @@ export default function ClientDetailPage() {
                                                 <div className="text-right flex flex-col justify-center">
                                                     <p className="text-[10px] text-slate-500 uppercase font-black tracking-widest mb-1">Costo / Origen</p>
                                                     <p className="text-lg font-black text-slate-300">
-                                                        {service.serviceType === 'IMMEDIATE' ? `$${service.totalCost}` : 'Incluido en Plan'}
+                                                        {service.serviceType === 'IMMEDIATE' ? formatMXN(service.totalCost) : 'Incluido en Plan'}
                                                     </p>
                                                 </div>
                                             </div>

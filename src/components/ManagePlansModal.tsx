@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, Search, Plus, Trash2, HeartHandshake } from "lucide-react";
+import { formatMXN } from "@/lib/format";
 
 interface ManagePlansModalProps {
     isOpen: boolean;
@@ -217,7 +218,7 @@ export default function ManagePlansModal({ isOpen, onClose, onSuccess }: ManageP
                                                     <p className="text-xs text-slate-400 mt-1">{plan.description || "Sin descripción"}</p>
                                                 </div>
                                                 <div className="text-right shrink-0">
-                                                    <p className="text-lg font-bold">${Number(plan.price).toLocaleString()}</p>
+                                                    <p className="text-lg font-bold">{formatMXN(plan.price)}</p>
                                                     <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest bg-black/20 px-2 py-1 rounded inline-block mt-1 border border-white/5">
                                                         {plan.installmentsCount === 1 ? 'CONTADO' : `${plan.installmentsCount} MESES`}
                                                     </p>

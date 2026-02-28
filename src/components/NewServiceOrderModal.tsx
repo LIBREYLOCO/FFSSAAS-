@@ -7,6 +7,7 @@ import {
     CheckCircle2, Loader2, DollarSign, Info
 } from "lucide-react";
 import Link from "next/link";
+import { formatMXN } from "@/lib/format";
 
 interface NewServiceOrderModalProps {
     isOpen: boolean;
@@ -274,7 +275,7 @@ export default function NewServiceOrderModal({ isOpen, onClose, owner, onSuccess
                                                         <div className="flex justify-between items-center mb-2">
                                                             <div>
                                                                 <p className="font-bold text-sm text-white">{product.name}</p>
-                                                                <p className="text-[10px] text-slate-500 uppercase tracking-widest">${product.price} • Stock: {product.stock}</p>
+                                                                <p className="text-[10px] text-slate-500 uppercase tracking-widest">{formatMXN(product.price)} • Stock: {product.stock}</p>
                                                             </div>
                                                             <button
                                                                 onClick={() => toggleProduct(product)}
@@ -292,7 +293,7 @@ export default function NewServiceOrderModal({ isOpen, onClose, owner, onSuccess
                                                                     <button onClick={() => updateQuantity(product.id, 1)} className="w-6 h-6 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10" disabled={isSelected.quantity >= product.stock}>+</button>
                                                                 </div>
                                                                 <div className="flex-1 text-right font-bold text-brand-gold-500 text-sm">
-                                                                    ${(product.price * isSelected.quantity).toLocaleString()}
+                                                                    {formatMXN(product.price * isSelected.quantity)}
                                                                 </div>
                                                             </div>
                                                         )}
@@ -305,17 +306,17 @@ export default function NewServiceOrderModal({ isOpen, onClose, owner, onSuccess
                                     <div className="p-6 bg-white/5 rounded-3xl border border-white/5 mt-4">
                                         <div className="flex justify-between items-center mb-2">
                                             <span className="text-xs font-bold text-slate-400">Servicio Base</span>
-                                            <span className="font-mono text-sm">${(formData.price || 0).toLocaleString()}</span>
+                                            <span className="font-mono text-sm">{formatMXN(formData.price || 0)}</span>
                                         </div>
                                         {selectedProducts.length > 0 && (
                                             <div className="flex justify-between items-center mb-4 pb-4 border-b border-white/5">
                                                 <span className="text-xs font-bold text-slate-400">Productos ({selectedProducts.length})</span>
-                                                <span className="font-mono text-sm">${selectedProducts.reduce((sum, p) => sum + (p.price * p.quantity), 0).toLocaleString()}</span>
+                                                <span className="font-mono text-sm">{formatMXN(selectedProducts.reduce((sum, p) => sum + (p.price * p.quantity), 0))}</span>
                                             </div>
                                         )}
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm font-black uppercase tracking-widest text-brand-gold-500">Total a Pagar</span>
-                                            <span className="text-2xl font-black text-white italic tracking-tighter">${calculateTotal().toLocaleString()}</span>
+                                            <span className="text-2xl font-black text-white italic tracking-tighter">{formatMXN(calculateTotal())}</span>
                                         </div>
                                     </div>
                                 </div>
