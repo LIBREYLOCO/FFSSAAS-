@@ -16,10 +16,12 @@ async function run(sql: string, label: string) {
         await prisma.$executeRawUnsafe(sql);
         console.log(`✅ ${label}`);
     } catch (e: any) {
+        // Prisma wraps PG errors: check both e.code and e.meta.code
+        const pgCode: string = e.meta?.code ?? e.code ?? "";
         // 42P07 = relation already exists
         // 42710 = constraint already exists
         // 42701 = column already exists
-        if (["42P07", "42710", "42701"].includes(e.code)) {
+        if (["42P07", "42710", "42701"].includes(pgCode)) {
             console.log(`⏭  ${label} (ya existe)`);
         } else {
             console.error(`❌ ${label}: ${e.message}`);
