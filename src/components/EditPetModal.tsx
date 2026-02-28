@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Dog, Calendar, Loader2, Upload } from "lucide-react";
+import { X, Dog, Calendar, Loader2, Upload, FileText, Activity } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 interface Props {
@@ -276,14 +276,72 @@ export default function EditPetModal({ isOpen, onClose, onSuccess, pet }: Props)
                                 </div>
                             </div>
 
-                            <button
-                                disabled={loading || uploadingImage}
-                                type="submit"
-                                className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-2 group mt-4 font-bold"
-                            >
-                                {loading || uploadingImage ? <Loader2 className="animate-spin" size={20} /> : "Guardar Cambios"}
-                            </button>
+                            <div className="flex justify-end pt-4 gap-4 border-t border-white/5">
+                                <button type="button" onClick={onClose} className="px-6 py-3 rounded-xl font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
+                                    Cancelar
+                                </button>
+                                <button type="submit" disabled={loading || uploadingImage} className="btn-primary flex items-center gap-2">
+                                    {loading ? <Loader2 className="animate-spin" size={20} /> : "Guardar Cambios"}
+                                </button>
+                            </div>
                         </form>
+
+                        {/* Pet Service History & Certificates Section */}
+                        {pet.services && pet.services.length > 0 && (
+                            <div className="mt-8 border-t border-white/10 pt-8">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 bg-brand-gold-500/10 rounded-xl text-brand-gold-500">
+                                        <Activity size={20} />
+                                    </div>
+                                    <h3 className="text-lg font-bold">Historial de Servicios</h3>
+                                </div>
+
+                                <div className="space-y-4 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                                    {pet.services.map((svc: any) => (
+                                        <div key={svc.id} className="bg-white/5 border border-white/10 p-4 rounded-2xl relative">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <p className="font-bold text-sm text-brand-gold-500">{svc.serviceType} / Folio {svc.folio}</p>
+                                                    <p className="text-xs text-slate-400">Creado el {new Date(svc.createdAt).toLocaleDateString()}</p>
+                                                </div>
+                                                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg ${svc.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-blue-500/10 text-blue-400'}`}>
+                                                    {svc.status}
+                                                </span>
+                                            </div>
+
+                                            {/* Tracking Logs Summary */}
+                                            {svc.trackingLogs && svc.trackingLogs.length > 0 && (
+                                                <div className="mt-3 bg-black/20 p-3 rounded-xl">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Últimos movimientos</p>
+                                                    <div className="space-y-2">
+                                                        {svc.trackingLogs.slice(0, 3).map((log: any) => (
+                                                            <div key={log.id} className="flex gap-2 text-xs">
+                                                                <span className="text-slate-500 min-w-16">{new Date(log.timestamp).toLocaleDateString()}</span>
+                                                                <span className="text-slate-300">{log.event}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Certificate Download Button */}
+                                            {svc.status === 'COMPLETED' && svc.sesionCremacion?.id && (
+                                                <div className="mt-4 pt-4 border-t border-white/5">
+                                                    <a
+                                                        href={`/api/sesiones-cremacion/${svc.sesionCremacion.id}/certificado`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-2 justify-center w-full py-2 bg-brand-gold-500/10 hover:bg-brand-gold-500/20 text-brand-gold-400 rounded-xl transition-colors text-xs font-bold uppercase tracking-widest"
+                                                    >
+                                                        <FileText size={16} /> Ver Certificado de Cremación
+                                                    </a>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </motion.div>
             </div>

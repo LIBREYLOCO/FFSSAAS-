@@ -15,7 +15,7 @@ export async function GET() {
         const mappedVeterinaries = veterinaries.map(v => ({
             ...v,
             name: v.businessName,
-            fixedFee: 0,
+            fixedFee: Number(v.referralCommissionRate || 0),
         }));
 
         return NextResponse.json(mappedVeterinaries);
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
         return NextResponse.json({
             ...newVet,
             name: newVet.businessName,
-            fixedFee: 0,
+            fixedFee: Number(newVet.referralCommissionRate || 0),
         });
     } catch (error) {
         return NextResponse.json({ error: "Error creating veterinary" }, { status: 500 });
