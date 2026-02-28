@@ -406,7 +406,7 @@ export default function ReportesPage() {
                     <CartesianGrid strokeDasharray="4 4" stroke="rgba(255,255,255,0.04)" vertical={false} />
                     <XAxis dataKey="month" tick={{ fill: "#64748b", fontSize: 11 }} tickLine={false} axisLine={false} />
                     <YAxis tickFormatter={v => `$${(v/1000).toFixed(0)}k`} tick={{ fill: "#64748b", fontSize: 11 }} tickLine={false} axisLine={false} />
-                    <Tooltip {...tooltipStyle} formatter={(v: number) => fmt$(v)} />
+                    <Tooltip {...tooltipStyle} formatter={(v: number | undefined) => fmt$(v ?? 0)} />
                     <Legend wrapperStyle={{ fontSize: 11, paddingTop: 12 }} />
                     <Area type="monotone" dataKey="servicios" name="Servicios" stroke="#c5a059" fill="url(#gServ)" strokeWidth={2.5} />
                     <Area type="monotone" dataKey="prevision" name="Previsión" stroke="#a78bfa" fill="url(#gPrev)" strokeWidth={2.5} />
