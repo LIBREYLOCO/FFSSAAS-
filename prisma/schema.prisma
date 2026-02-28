@@ -182,6 +182,8 @@ model ServiceOrder {
   route           Route?              @relation(fields: [routeId], references: [id])
   routeId         String?
   sesionCremacion SesionCremacion?
+  petPhoto        String?     // Foto de la mascota al momento de la recolección
+  deliveryPhoto   String?     // Evidencia fotográfica de la entrega final
 }
 
 // =========================================================

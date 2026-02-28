@@ -6,8 +6,9 @@ import {
   Truck, Flame, Package, CheckCircle2, Clock, RefreshCcw,
   Dog, User, ChevronRight, Loader2, FileText, X, AlertCircle,
   Plus, Pencil, ToggleLeft, ToggleRight, Users, Car,
-  Wrench, Search,
+  Wrench, Search, Camera, Image as ImageIcon,
 } from "lucide-react";
+import { generatePickupReceipt, generateServiceCertificate } from "@/lib/pdf-generator";
 import Link from "next/link";
 
 
@@ -36,9 +37,11 @@ interface Order {
   folio: string;
   status: string;
   serviceType: string;
-  pet?: { name: string; species: string; breed?: string };
-  owner?: { name: string };
+  pet?: { name: string; species: string; breed?: string; weightKg?: number };
+  owner?: { name: string; phone?: string; address?: string };
   sesionCremacion?: SesionCremacion | null;
+  petPhoto?: string | null;
+  deliveryPhoto?: string | null;
 }
 
 interface TeamUser {
@@ -118,6 +121,9 @@ export default function OperacionPage() {
   // ── Estado: Equipo tab ──────────────────────────────────────────────────
   const [equipo, setEquipo] = useState<TeamUser[]>([]);
   const [loadingEquipo, setLoadingEquipo] = useState(false);
+  // ── Estado: Foto Evidence ──────────────────────────────────────────────
+  const [photoModal, setPhotoModal] = useState<{ order: Order; type: "petPhoto" | "deliveryPhoto" } | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // ── Fetchers ────────────────────────────────────────────────────────────
 
@@ -170,6 +176,37 @@ export default function OperacionPage() {
       }
     } finally {
       setUpdating(null);
+    }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!photoModal || !e.target.files?.[0]) return;
+    const file = e.target.files[0];
+    setUploadingPhoto(true);
+
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+        const res = await fetch("/api/service-orders/status", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId: photoModal.order.id,
+            [photoModal.type]: base64, // Update either petPhoto or deliveryPhoto
+          }),
+        });
+
+        if (res.ok) {
+          setOrders(prev => prev.map(o => o.id === photoModal.order.id ? { ...o, [photoModal.type]: base64 } : o));
+          setPhotoModal(null);
+        }
+      };
+    } catch (err) {
+      console.error("Error uploading photo:", err);
+    } finally {
+      setUploadingPhoto(false);
     }
   };
 
@@ -451,6 +488,30 @@ export default function OperacionPage() {
                             );
                           })()}
 
+                          <div className="grid grid-cols-2 gap-2 mt-1">
+                            <button
+                              onClick={() => setPhotoModal({ order, type: "petPhoto" })}
+                              className={`py-2 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase border transition-all ${order.petPhoto ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10"}`}
+                            >
+                              <Camera size={12} /> {order.petPhoto ? "Foto Lista" : "Foto Pickup"}
+                            </button>
+                            <button
+                              onClick={() => generatePickupReceipt(order)}
+                              className="py-2 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white transition-all"
+                            >
+                              <FileText size={12} /> Recibo Recol.
+                            </button>
+                          </div>
+
+                          {order.status === "DELIVERED" || order.status === "READY_FOR_DELIVERY" ? (
+                            <button
+                              onClick={() => setPhotoModal({ order, type: "deliveryPhoto" })}
+                              className={`w-full py-2 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase border transition-all mt-1 ${order.deliveryPhoto ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-brand-gold-500/10 border-brand-gold-500/20 text-brand-gold-400 hover:bg-brand-gold-500/20"}`}
+                            >
+                              <ImageIcon size={12} /> {order.deliveryPhoto ? "Evidencia Entrega OK" : "Subir Foto Entrega"}
+                            </button>
+                          ) : null}
+
                           <Link
                             href={`/seguimiento/${order.folio}`}
                             className="w-full py-2.5 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white transition-all mt-1"
@@ -704,6 +765,75 @@ export default function OperacionPage() {
                 <button onClick={() => setHornoModal(false)} className="flex-1 py-3 rounded-2xl border border-white/20 text-slate-300 hover:bg-white/10 transition-colors">Cancelar</button>
                 <button onClick={handleSaveHorno} disabled={hornoSaving} className="flex-1 btn-primary flex items-center justify-center gap-2">
                   {hornoSaving ? <span className="animate-pulse">Guardando...</span> : <><CheckCircle2 size={16} /> {editingHorno ? "Guardar" : "Crear"}</>}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ══ MODAL: Subir Foto Evidence ═══════════════════════════════════════ */}
+      <AnimatePresence>
+        {photoModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-4"
+            onClick={(e) => e.target === e.currentTarget && setPhotoModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="glass-card rounded-[2.5rem] p-8 w-full max-w-sm space-y-6 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold italic flex items-center gap-2">
+                    {photoModal.type === "petPhoto" ? <Camera className="text-brand-gold-400" size={20} /> : <ImageIcon className="text-emerald-400" size={20} />}
+                    {photoModal.type === "petPhoto" ? "Foto de Recolección" : "Evidencia de Entrega"}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1">Folio: {photoModal.order.folio}</p>
+                </div>
+                <button onClick={() => setPhotoModal(null)} className="p-2 rounded-xl hover:bg-white/10 transition-colors"><X size={20} /></button>
+              </div>
+
+              <div className="aspect-video rounded-3xl bg-black/40 border-2 border-dashed border-white/10 flex flex-col items-center justify-center overflow-hidden relative group">
+                {photoModal.order[photoModal.type] ? (
+                  <>
+                    <img src={photoModal.order[photoModal.type] as string} alt="Preview" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <p className="text-white text-xs font-bold uppercase tracking-widest">Cambiar Imagen</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Camera size={32} className="text-slate-700 mb-2" />
+                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Capturar o seleccionar foto</p>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  onChange={handlePhotoUpload}
+                  disabled={uploadingPhoto}
+                />
+              </div>
+
+              {uploadingPhoto && (
+                <div className="flex items-center justify-center gap-3 text-brand-gold-400 animate-pulse">
+                  <Loader2 size={20} className="animate-spin" />
+                  <span className="text-sm font-bold uppercase tracking-widest">Subiendo evidencia...</span>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] text-slate-500 text-center italic">
+                  {photoModal.type === "petPhoto"
+                    ? "Esta foto aparecerá en el certificado de homenaje y en el recibo de recolección."
+                    : "Esta imagen sirve como comprobante final de la entrega de las urnas/accesorios."}
+                </p>
+                <button onClick={() => setPhotoModal(null)} className="w-full py-3 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-300 font-bold transition-all mt-2">
+                  Cerrar
                 </button>
               </div>
             </motion.div>
