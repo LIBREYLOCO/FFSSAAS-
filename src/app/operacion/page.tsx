@@ -51,13 +51,13 @@ interface TeamUser {
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const STATUSES: { key: string; label: string; color: string; icon: React.ElementType; next?: string }[] = [
-  { key: "PENDING_PICKUP",     label: "Pendiente de Recolección", color: "bg-amber-500/20 text-amber-400 border-amber-500/30",   icon: Clock,          next: "IN_TRANSIT" },
-  { key: "IN_TRANSIT",         label: "En Tránsito",              color: "bg-blue-500/20 text-blue-400 border-blue-500/30",     icon: Truck,          next: "AT_CREMATORY" },
-  { key: "AT_CREMATORY",       label: "En Crematorio",            color: "bg-orange-500/20 text-orange-400 border-orange-500/30", icon: Flame,          next: "CREMATING" },
-  { key: "CREMATING",          label: "En Proceso de Cremación",  color: "bg-red-500/20 text-red-400 border-red-500/30",        icon: Flame,          next: "READY_FOR_DELIVERY" },
-  { key: "READY_FOR_DELIVERY", label: "Listo para Entrega",       color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30", icon: Package,    next: "DELIVERED" },
-  { key: "DELIVERED",          label: "Entregado",                color: "bg-sky-500/20 text-sky-400 border-sky-500/30",        icon: CheckCircle2,   next: "COMPLETED" },
-  { key: "COMPLETED",          label: "Completado",               color: "bg-slate-500/20 text-slate-400 border-slate-500/30",  icon: CheckCircle2 },
+  { key: "PENDING_PICKUP", label: "Pendiente de Recolección", color: "bg-amber-500/20 text-amber-400 border-amber-500/30", icon: Clock, next: "IN_TRANSIT" },
+  { key: "IN_TRANSIT", label: "En Tránsito", color: "bg-blue-500/20 text-blue-400 border-blue-500/30", icon: Truck, next: "AT_CREMATORY" },
+  { key: "AT_CREMATORY", label: "En Crematorio", color: "bg-orange-500/20 text-orange-400 border-orange-500/30", icon: Flame, next: "CREMATING" },
+  { key: "CREMATING", label: "En Proceso de Cremación", color: "bg-red-500/20 text-red-400 border-red-500/30", icon: Flame, next: "READY_FOR_DELIVERY" },
+  { key: "READY_FOR_DELIVERY", label: "Listo para Entrega", color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30", icon: Package, next: "DELIVERED" },
+  { key: "DELIVERED", label: "Entregado", color: "bg-sky-500/20 text-sky-400 border-sky-500/30", icon: CheckCircle2, next: "COMPLETED" },
+  { key: "COMPLETED", label: "Completado", color: "bg-slate-500/20 text-slate-400 border-slate-500/30", icon: CheckCircle2 },
 ];
 
 const SERVICE_TYPE_LABELS: Record<string, string> = {
@@ -79,9 +79,9 @@ function statusInfo(key: string) {
 }
 
 const TABS = [
-  { id: "orders",  label: "Órdenes",    icon: Wrench },
-  { id: "hornos",  label: "Hornos",     icon: Flame },
-  { id: "equipo",  label: "Equipo",     icon: Users },
+  { id: "orders", label: "Órdenes", icon: Wrench },
+  { id: "hornos", label: "Hornos", icon: Flame },
+  { id: "equipo", label: "Equipo", icon: Users },
 ] as const;
 
 type Tab = typeof TABS[number]["id"];
@@ -99,6 +99,7 @@ export default function OperacionPage() {
   // ── Estado: Modal Cremación ─────────────────────────────────────────────
   const [cremacionModal, setCremacionModal] = useState<Order | null>(null);
   const [hornos, setHornos] = useState<Horno[]>([]);
+  const [operadores, setOperadores] = useState<TeamUser[]>([]);
   const [cremForm, setCremForm] = useState({ hornoId: "", operadorNombre: "", fechaInicio: "", observaciones: "" });
   const [cremSaving, setCremSaving] = useState(false);
   const [cremError, setCremError] = useState("");
@@ -173,8 +174,15 @@ export default function OperacionPage() {
   const openCremacionModal = async (order: Order) => {
     setCremError("");
     setCremForm({ hornoId: "", operadorNombre: "", fechaInicio: new Date().toISOString().slice(0, 16), observaciones: "" });
-    const res = await fetch("/api/hornos");
-    if (res.ok) setHornos(await res.json());
+    const [resHornos, resUsers] = await Promise.all([
+      fetch("/api/hornos"),
+      fetch("/api/users")
+    ]);
+    if (resHornos.ok) setHornos(await resHornos.json());
+    if (resUsers.ok) {
+      const users: TeamUser[] = await resUsers.json();
+      setOperadores(users.filter(u => u.isActive && (u.role === "OPERADOR" || u.role === "DRIVER")));
+    }
     setCremacionModal(order);
   };
 
@@ -288,11 +296,10 @@ export default function OperacionPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                isActive
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${isActive
                   ? "bg-brand-gold-600/20 text-brand-gold-400 shadow-[0_0_0_1px_rgba(197,160,89,0.2)]"
                   : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
-              }`}
+                }`}
             >
               <tab.icon size={15} />
               {tab.label}
@@ -612,7 +619,10 @@ export default function OperacionPage() {
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Operador / Técnico *</label>
-                  <input className="aura-input" placeholder="Nombre del operador" value={cremForm.operadorNombre} onChange={e => setCremForm({ ...cremForm, operadorNombre: e.target.value })} />
+                  <select className="aura-input" value={cremForm.operadorNombre} onChange={e => setCremForm({ ...cremForm, operadorNombre: e.target.value })}>
+                    <option value="">Seleccionar operador...</option>
+                    {operadores.map(op => <option key={op.id} value={op.name}>{op.name}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-xs text-slate-400 mb-1">Fecha y hora de inicio *</label>
