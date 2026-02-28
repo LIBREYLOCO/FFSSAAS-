@@ -59,8 +59,8 @@ export default function TrackingStatus({ params }: { params: Promise<{ folio: st
         <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
             <h1 className="text-2xl font-bold mb-4">Error</h1>
             <p className="text-slate-400 mb-8">{error || "No se pudo encontrar la orden."}</p>
-            <Link href="/seguimiento" className="text-brand-gold-500 flex items-center gap-2">
-                <ChevronLeft size={20} /> Volver a buscar
+            <Link href="/operacion" className="text-brand-gold-500 flex items-center gap-2">
+                <ChevronLeft size={20} /> Volver al Centro de Operaciones
             </Link>
         </div>
     );
@@ -70,7 +70,7 @@ export default function TrackingStatus({ params }: { params: Promise<{ folio: st
     return (
         <div className="min-h-screen bg-black text-white p-6 md:p-10 font-sans">
             <header className="max-w-4xl mx-auto flex items-center justify-between mb-10">
-                <Link href="/seguimiento" className="p-2 bg-white/5 rounded-xl text-slate-400 hover:text-white transition-colors">
+                <Link href="/operacion" className="p-2 bg-white/5 rounded-xl text-slate-400 hover:text-white transition-colors">
                     <ChevronLeft size={20} />
                 </Link>
                 <div className="text-right flex flex-col items-end gap-2">
