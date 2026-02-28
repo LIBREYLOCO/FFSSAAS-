@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name, species, breed, birthDate, deathDate, ownerId, weightKg, color, photoUrl } = body;
+        const { name, species, breed, birthDate, deathDate, ownerId, weightKg, color, photoUrl, referralSource, clinicId } = body;
 
         // weightKg is critical for cremation logic
         if (!name || !species || !weightKg) {
@@ -33,7 +33,9 @@ export async function POST(request: Request) {
                 ownerId, // Optional in schema, but passed if linked
                 weightKg: parseFloat(weightKg),
                 color,
-                photoUrl // the Supabase public URL or base64 string
+                photoUrl, // the Supabase public URL or base64 string
+                referralSource: referralSource || "DIRECTO",
+                clinicId: referralSource === "VETERINARIA" ? clinicId : null
             }
         });
 

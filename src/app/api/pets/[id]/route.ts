@@ -5,7 +5,7 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
     try {
         const { id } = await props.params;
         const body = await request.json();
-        const { name, species, breed, birthDate, deathDate, weightKg, color, photoUrl } = body;
+        const { name, species, breed, birthDate, deathDate, weightKg, color, photoUrl, referralSource, clinicId } = body;
 
         const updateData: any = {};
         if (name !== undefined) updateData.name = name;
@@ -16,6 +16,10 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
         if (weightKg !== undefined) updateData.weightKg = parseFloat(weightKg as string);
         if (color !== undefined) updateData.color = color;
         if (photoUrl !== undefined) updateData.photoUrl = photoUrl;
+        if (referralSource !== undefined) {
+            updateData.referralSource = referralSource;
+            updateData.clinicId = referralSource === "VETERINARIA" ? clinicId : null;
+        }
 
         const pet = await prisma.pet.update({
             where: { id },

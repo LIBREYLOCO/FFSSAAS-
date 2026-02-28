@@ -122,6 +122,7 @@ model VeterinaryClinic {
   updatedAt    DateTime            @updatedAt
   referrals    PrevisionContract[]
   serviceOrders ServiceOrder[]
+  referredPets  Pet[]
 }
 
 // =========================================================
@@ -139,10 +140,12 @@ model Pet {
   deathDate DateTime?
   ownerId   String?
   clinicId  String?
+  referralSource String @default("DIRECTO")
   photoUrl  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   owner    Owner?         @relation(fields: [ownerId], references: [id])
+  clinic   VeterinaryClinic? @relation(fields: [clinicId], references: [id])
   services ServiceOrder[]
 }
 

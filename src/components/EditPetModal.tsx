@@ -17,6 +17,7 @@ export default function EditPetModal({ isOpen, onClose, onSuccess, pet }: Props)
     const [uploadingImage, setUploadingImage] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [clinics, setClinics] = useState<any[]>([]);
 
     const [formData, setFormData] = useState({
         name: "",
@@ -25,7 +26,9 @@ export default function EditPetModal({ isOpen, onClose, onSuccess, pet }: Props)
         birthDate: "",
         weightKg: "",
         color: "",
-        photoUrl: ""
+        photoUrl: "",
+        referralSource: "DIRECTO",
+        clinicId: ""
     });
 
     useEffect(() => {
@@ -37,10 +40,17 @@ export default function EditPetModal({ isOpen, onClose, onSuccess, pet }: Props)
                 birthDate: pet.birthDate ? new Date(pet.birthDate).toISOString().split('T')[0] : "",
                 weightKg: pet.weightKg ? pet.weightKg.toString() : "",
                 color: pet.color || "",
-                photoUrl: pet.photoUrl || ""
+                photoUrl: pet.photoUrl || "",
+                referralSource: pet.referralSource || "DIRECTO",
+                clinicId: pet.clinicId || ""
             });
             setPreviewUrl(pet.photoUrl || null);
             setSelectedFile(null);
+
+            fetch("/api/veterinarias")
+                .then(res => res.json())
+                .then(setClinics)
+                .catch(console.error);
         }
     }, [pet, isOpen]);
 
@@ -223,6 +233,42 @@ export default function EditPetModal({ isOpen, onClose, onSuccess, pet }: Props)
                                         className="aura-input w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-slate-200 outline-none"
                                         placeholder="Ej. Negro"
                                     />
+                                </div>
+                            </div>
+
+                            {/* Referral Source Section */}
+                            <div className="border-t border-white/5 pt-6 space-y-4">
+                                <h3 className="text-sm font-bold text-slate-300">Origen del Cliente</h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Tipo de Origen</label>
+                                        <select
+                                            value={formData.referralSource}
+                                            onChange={e => setFormData({ ...formData, referralSource: e.target.value, clinicId: "" })}
+                                            className="aura-input w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-slate-200 outline-none appearance-none"
+                                        >
+                                            <option value="DIRECTO">Directo</option>
+                                            <option value="VETERINARIA">Veterinaria</option>
+                                        </select>
+                                    </div>
+                                    {formData.referralSource === "VETERINARIA" && (
+                                        <div className="space-y-2">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Clínica Veterinaria</label>
+                                            <select
+                                                required
+                                                value={formData.clinicId}
+                                                onChange={e => setFormData({ ...formData, clinicId: e.target.value })}
+                                                className="aura-input w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-slate-200 outline-none appearance-none"
+                                            >
+                                                <option value="" disabled>Seleccione una clínica</option>
+                                                {clinics.map(clinic => (
+                                                    <option key={clinic.id} value={clinic.id}>
+                                                        {clinic.name || clinic.businessName}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
