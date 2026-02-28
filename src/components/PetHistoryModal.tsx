@@ -1,7 +1,8 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, FileText, Activity } from "lucide-react";
+import { X, FileText, Activity, Search } from "lucide-react";
+import Link from "next/link";
 
 interface Props {
     isOpen: boolean;
@@ -49,8 +50,18 @@ export default function PetHistoryModal({ isOpen, onClose, pet }: Props) {
                                     <div key={svc.id} className="bg-white/5 border border-white/10 p-5 rounded-2xl relative">
                                         <div className="flex justify-between items-start mb-3">
                                             <div>
-                                                <p className="font-bold text-brand-gold-500">{svc.serviceType} / Folio {svc.folio}</p>
-                                                <p className="text-xs text-slate-400 mt-0.5">Creado el {new Date(svc.createdAt).toLocaleDateString()}</p>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <p className="font-black text-brand-gold-500 uppercase tracking-tighter">{svc.serviceType}</p>
+                                                    <div className="flex items-center gap-1 bg-white/10 px-2 py-0.5 rounded-lg border border-white/10">
+                                                        <span className="text-[10px] font-mono text-slate-300 font-bold">Folio: {svc.folio}</span>
+                                                        <Link href={`/seguimiento/${svc.folio}`} className="text-brand-gold-500 hover:text-white transition-all ml-1" title="Rastrear Servicio">
+                                                            <Search size={12} strokeWidth={3} />
+                                                        </Link>
+                                                    </div>
+                                                </div>
+                                                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">
+                                                    Registrado el {new Date(svc.createdAt).toLocaleDateString()}
+                                                </p>
                                             </div>
                                             <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg ${svc.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
                                                 {svc.status}

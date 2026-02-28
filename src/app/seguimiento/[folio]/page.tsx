@@ -11,18 +11,22 @@ import {
     ChevronLeft,
     CheckCircle2,
     Circle,
-    Clock
+    Clock,
+    FileText,
+    Activity,
+    Users
 } from "lucide-react";
 import Link from "next/link";
 import { generateServiceCertificate } from "@/lib/pdf-generator";
 
 const STATUS_STEPS = [
-    { id: "PENDING_PICKUP", label: "Recolección Pendiente", icon: Clock, color: "text-slate-400" },
-    { id: "PICKED_UP", label: "En Camino", icon: Truck, color: "text-blue-400" },
-    { id: "ARRIVED", label: "En Instalaciones", icon: Building2, color: "text-emerald-400" },
-    { id: "IN_PROCESS", label: "Ritual Iniciado", icon: Flame, color: "text-orange-400" },
-    { id: "READY_FOR_DELIVERY", label: "Listo para Entrega", icon: Package, color: "text-purple-400" },
-    { id: "DELIVERED", label: "Entregado", icon: Dog, color: "text-brand-gold-500" },
+    { id: "PENDING_PICKUP", label: "Pendiente de Recolección", icon: Clock, color: "text-amber-400" },
+    { id: "IN_TRANSIT", label: "En Camino", icon: Truck, color: "text-blue-400" },
+    { id: "AT_CREMATORY", label: "En Instalaciones", icon: Building2, color: "text-orange-400" },
+    { id: "CREMATING", label: "Ritual en Proceso", icon: Flame, color: "text-red-400" },
+    { id: "READY_FOR_DELIVERY", label: "Listo para Entrega", icon: Package, color: "text-emerald-400" },
+    { id: "DELIVERED", label: "Entregado", icon: CheckCircle2, color: "text-sky-400" },
+    { id: "COMPLETED", label: "Homenaje Finalizado", icon: Dog, color: "text-brand-gold-500" },
 ];
 
 export default function TrackingStatus({ params }: { params: Promise<{ folio: string }> }) {
@@ -74,12 +78,12 @@ export default function TrackingStatus({ params }: { params: Promise<{ folio: st
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Folio de Seguimiento</p>
                         <h2 className="text-xl font-bold italic tracking-tighter text-brand-gold-500">{order.folio}</h2>
                     </div>
-                    {order.status === 'DELIVERED' && (
+                    {(order.status === 'DELIVERED' || order.status === 'COMPLETED') && (
                         <button
                             onClick={() => generateServiceCertificate(order)}
-                            className="text-[10px] font-bold bg-brand-gold-500 text-black px-3 py-1 rounded-full hover:bg-white transition-colors flex items-center gap-1 uppercase tracking-tighter"
+                            className="text-[10px] font-bold bg-brand-gold-500 text-black px-4 py-2 rounded-xl hover:bg-white transition-all flex items-center gap-2 uppercase tracking-tighter shadow-lg shadow-brand-gold-500/20 active:scale-95"
                         >
-                            <Package size={12} /> Descargar Certificado
+                            <FileText size={14} /> Descargar Certificado
                         </button>
                     )}
                 </div>
@@ -105,6 +109,57 @@ export default function TrackingStatus({ params }: { params: Promise<{ folio: st
                         </p>
                     </div>
                 </motion.div>
+
+                {/* Session details (Dynamic Info) */}
+                {order.sesionCremacion && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="glass-card p-6 rounded-[30px] border border-orange-500/20 bg-orange-500/5 shadow-[0_0_50px_rgba(251,146,60,0.05)]"
+                    >
+                        <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                            <div className="w-16 h-16 rounded-2xl bg-orange-500/20 flex items-center justify-center text-orange-400 border border-orange-500/10 flex-shrink-0">
+                                <Flame size={32} />
+                            </div>
+                            <div className="flex-1 space-y-4 w-full">
+                                <div>
+                                    <h3 className="text-xl font-black italic text-orange-200 tracking-tight">Ritual Ceremonial</h3>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Información técnica del proceso</p>
+                                </div>
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5">
+                                        <div className="flex items-center gap-1.5 mb-1 text-slate-500">
+                                            <Building2 size={10} />
+                                            <span className="text-[8px] font-black uppercase tracking-widest">Horno</span>
+                                        </div>
+                                        <p className="text-xs font-bold text-slate-200">{order.sesionCremacion.horno?.nombre}</p>
+                                    </div>
+                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5">
+                                        <div className="flex items-center gap-1.5 mb-1 text-slate-500">
+                                            <Users size={10} />
+                                            <span className="text-[8px] font-black uppercase tracking-widest">Operador</span>
+                                        </div>
+                                        <p className="text-xs font-bold text-slate-200">{order.sesionCremacion.operadorNombre}</p>
+                                    </div>
+                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5">
+                                        <div className="flex items-center gap-1.5 mb-1 text-slate-500">
+                                            <FileText size={10} />
+                                            <span className="text-[8px] font-black uppercase tracking-widest">Certificado</span>
+                                        </div>
+                                        <p className="text-xs font-bold font-mono text-brand-gold-500">{order.sesionCremacion.numeroCertificado}</p>
+                                    </div>
+                                    <div className="bg-black/40 p-3 rounded-2xl border border-white/5">
+                                        <div className="flex items-center gap-1.5 mb-1 text-slate-500">
+                                            <Clock size={10} />
+                                            <span className="text-[8px] font-black uppercase tracking-widest">Iniciado</span>
+                                        </div>
+                                        <p className="text-xs font-bold text-slate-200">{new Date(order.sesionCremacion.fechaInicio).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
 
                 {/* Vertical Timeline */}
                 <section className="glass-card p-8 rounded-[40px] border border-white/5 overflow-hidden">
@@ -139,11 +194,17 @@ export default function TrackingStatus({ params }: { params: Promise<{ folio: st
                                             <Icon size={24} />
                                         </div>
                                         <div>
-                                            <h4 className={`text-lg font-bold tracking-tight ${isCurrent ? 'text-brand-gold-500' : 'text-slate-300'}`}>
+                                            <h4 className={`text-lg font-bold tracking-tight transition-all duration-500 ${isCurrent ? 'text-brand-gold-500' : 'text-slate-300'}`}>
                                                 {step.label}
                                             </h4>
                                             {isCurrent && (
-                                                <p className="text-[10px] uppercase font-black tracking-widest text-brand-gold-600 animate-pulse">En progreso</p>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="flex h-2 w-2 rounded-full bg-brand-gold-500 animate-ping" />
+                                                    <p className="text-[10px] uppercase font-black tracking-widest text-brand-gold-600">Estado Actual</p>
+                                                </div>
+                                            )}
+                                            {isPast && (
+                                                <p className="text-[9px] font-bold text-emerald-500/60 uppercase tracking-widest">Completado</p>
                                             )}
                                         </div>
                                     </div>

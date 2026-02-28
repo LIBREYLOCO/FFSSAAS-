@@ -4,41 +4,60 @@ import prisma from "@/lib/db";
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { contractId, amount, type, notes } = body;
+        const { contractId, amount, type, notes, products } = body;
 
         if (!contractId || !amount || !type) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
-        const contract = await prisma.previsionContract.findUnique({
-            where: { id: contractId },
-            include: { plan: true, payments: true }
-        });
-
-        if (!contract) return NextResponse.json({ error: "Contract not found" }, { status: 404 });
-
-        // Record the payment
-        const payment = await prisma.payment.create({
-            data: {
-                contractId,
-                amount,
-                type,
-                status: "PAID" // Default for manual entry in this flow
-            }
-        });
-
-        // Check if fully paid
-        const totalPaid = contract.payments.reduce((acc, p) => acc + Number(p.amount), 0) + amount;
-        if (totalPaid >= Number(contract.plan.price)) {
-            await prisma.previsionContract.update({
+        const result = await prisma.$transaction(async (tx) => {
+            const contract = await tx.previsionContract.findUnique({
                 where: { id: contractId },
-                data: { status: "COMPLETED" }
+                include: { plan: true, payments: true }
             });
-        }
 
-        return NextResponse.json(payment);
-    } catch (error) {
+            if (!contract) throw new Error("Contract not found");
+
+            // 1. Record the payment
+            const payment = await tx.payment.create({
+                data: {
+                    contractId,
+                    amount,
+                    type,
+                    notes: notes || undefined,
+                    status: "PAID"
+                }
+            });
+
+            // 2. Handle products (deduct stock)
+            if (products && Array.isArray(products)) {
+                for (const item of products) {
+                    await tx.product.update({
+                        where: { id: item.id },
+                        data: {
+                            stock: {
+                                decrement: item.quantity || 1
+                            }
+                        }
+                    });
+                }
+            }
+
+            // 3. Check if fully paid
+            const totalPaid = contract.payments.reduce((acc, p) => acc + Number(p.amount), 0) + amount;
+            if (totalPaid >= Number(contract.plan.price)) {
+                await tx.previsionContract.update({
+                    where: { id: contractId },
+                    data: { status: "COMPLETED" }
+                });
+            }
+
+            return payment;
+        });
+
+        return NextResponse.json(result);
+    } catch (error: any) {
         console.error("Error creating payment:", error);
-        return NextResponse.json({ error: "Error creating payment" }, { status: 500 });
+        return NextResponse.json({ error: error.message || "Error creating payment" }, { status: 500 });
     }
 }

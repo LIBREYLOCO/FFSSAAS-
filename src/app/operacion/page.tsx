@@ -6,8 +6,10 @@ import {
   Truck, Flame, Package, CheckCircle2, Clock, RefreshCcw,
   Dog, User, ChevronRight, Loader2, FileText, X, AlertCircle,
   Plus, Pencil, ToggleLeft, ToggleRight, Users, Car,
-  Wrench,
+  Wrench, Search,
 } from "lucide-react";
+import Link from "next/link";
+
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -297,8 +299,8 @@ export default function OperacionPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${isActive
-                  ? "bg-brand-gold-600/20 text-brand-gold-400 shadow-[0_0_0_1px_rgba(197,160,89,0.2)]"
-                  : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
+                ? "bg-brand-gold-600/20 text-brand-gold-400 shadow-[0_0_0_1px_rgba(197,160,89,0.2)]"
+                : "text-slate-500 hover:text-slate-300 hover:bg-white/5"
                 }`}
             >
               <tab.icon size={15} />
@@ -370,8 +372,20 @@ export default function OperacionPage() {
 
                       <div className="p-6 flex flex-col gap-4 flex-1">
                         <div className="flex items-start justify-between">
-                          <span className="text-[10px] font-mono text-slate-500">{order.folio}</span>
-                          <span className="text-[10px] font-black uppercase px-2 py-1 rounded-full bg-white/5 text-slate-400">
+                          <div className="flex flex-col">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold-500/80 mb-1">Folio de Rastreo</p>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-black font-mono tracking-tighter text-white">{order.folio}</span>
+                              <Link
+                                href={`/seguimiento/${order.folio}`}
+                                className="p-1.5 rounded-lg bg-white/5 hover:bg-brand-gold-500 hover:text-black transition-all text-slate-500"
+                                title="Ver Seguimiento"
+                              >
+                                <Search size={12} />
+                              </Link>
+                            </div>
+                          </div>
+                          <span className="text-[9px] font-black uppercase px-2 py-1 rounded-full bg-white/5 text-slate-500 border border-white/5 h-fit">
                             {SERVICE_TYPE_LABELS[order.serviceType] || order.serviceType}
                           </span>
                         </div>

@@ -21,12 +21,21 @@ export async function POST(request: NextRequest) {
         }
         const totalCost = basePrice + productsTotal;
 
-        // Generators
-        const folio = `SRV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
         const qrToken = `QR-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
         const newOrder = await prisma.$transaction(async (tx) => {
-            // 1. Create the Service Order
+            // 0. Generate Folio
+            let folio = `SRV-${Date.now()}`;
+            if (sucursalId) {
+                const sucursal = await tx.sucursal.update({
+                    where: { id: sucursalId },
+                    data: { folioCounter: { increment: 1 } },
+                    select: { codigo: true, folioCounter: true }
+                });
+                if (sucursal) {
+                    folio = `${sucursal.codigo}-${String(sucursal.folioCounter).padStart(5, '0')}`;
+                }
+            }
             const order = await tx.serviceOrder.create({
                 data: {
                     folio,

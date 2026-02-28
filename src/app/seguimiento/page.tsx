@@ -41,7 +41,7 @@ export default function TrackingSearch() {
             >
                 <div className="space-y-2">
                     <h1 className="text-4xl font-black tracking-tighter aura-gradient bg-clip-text text-transparent italic">
-                        PASEO DEL AMIGO
+                        SEGUIMIENTO RITUAL AURA
                     </h1>
                     <p className="text-brand-gold-500/80 text-xs font-bold tracking-[0.3em] uppercase">
                         Aura • Seguimiento Ritual

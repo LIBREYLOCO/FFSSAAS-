@@ -23,6 +23,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+    const sucursalId = request.headers.get("x-user-sucursal-id") ?? undefined;
     try {
         const body = await request.json();
         const {
@@ -64,16 +65,30 @@ export async function POST(request: Request) {
 
                 // Create Immediate Service Order
                 const timestamp = Date.now();
+                let folio = `SRV-${timestamp}`;
+                if (sucursalId) {
+                    const sucursal = await tx.sucursal.update({
+                        where: { id: sucursalId },
+                        data: { folioCounter: { increment: 1 } },
+                        select: { codigo: true, folioCounter: true }
+                    });
+                    if (sucursal) {
+                        folio = `${sucursal.codigo}-${String(sucursal.folioCounter).padStart(5, '0')}`;
+                    }
+                }
+                const qrToken = `QR-${timestamp}`;
+
                 await tx.serviceOrder.create({
                     data: {
-                        folio: `SRV-${timestamp}`,
+                        folio,
                         serviceType: "IMMEDIATE",
                         status: "PENDING_PICKUP",
                         totalCost: 3500,
                         balanceDue: 3500,
                         ownerId: owner.id,
                         petId: pet.id,
-                        qrToken: `QR-${timestamp}`
+                        qrToken,
+                        ...(sucursalId && { sucursalId }),
                     }
                 });
             } else if (serviceType === "PREVISION") {

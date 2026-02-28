@@ -2,9 +2,14 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Loader2, DollarSign } from "lucide-react";
+import { X, Loader2, DollarSign, Package, Plus, Search } from "lucide-react";
+import { useEffect } from "react";
+
+
+import { cn } from "@/lib/utils";
 
 interface Props {
+
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
@@ -17,8 +22,34 @@ export default function RegisterPaymentModal({ isOpen, onClose, onSuccess, contr
     const [formData, setFormData] = useState({
         amount: "",
         type: "Mensualidad",
-        notes: ""
+        notes: "",
+        selectedProducts: [] as any[]
     });
+    const [catalog, setCatalog] = useState<any[]>([]);
+    const [searchTerm, setSearchTerm] = useState("");
+
+    useEffect(() => {
+        if (isOpen) {
+            fetch("/api/products")
+                .then(res => res.json())
+                .then(data => setCatalog(data));
+        }
+    }, [isOpen]);
+
+    const toggleProduct = (product: any) => {
+        const exists = formData.selectedProducts.find(p => p.id === product.id);
+        if (exists) {
+            setFormData({
+                ...formData,
+                selectedProducts: formData.selectedProducts.filter(p => p.id !== product.id)
+            });
+        } else {
+            setFormData({
+                ...formData,
+                selectedProducts: [...formData.selectedProducts, { ...product, quantity: 1 }]
+            });
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,13 +62,14 @@ export default function RegisterPaymentModal({ isOpen, onClose, onSuccess, contr
                     contractId,
                     amount: parseFloat(formData.amount),
                     type: formData.type,
-                    notes: formData.notes
+                    notes: formData.notes,
+                    products: formData.selectedProducts.map(p => ({ id: p.id, quantity: 1 }))
                 })
             });
             if (res.ok) {
                 onSuccess();
                 onClose();
-                setFormData({ amount: "", type: "Mensualidad", notes: "" });
+                setFormData({ amount: "", type: "Mensualidad", notes: "", selectedProducts: [] });
             } else {
                 const data = await res.json();
                 alert(data.error || "Error al registrar pago");
@@ -105,13 +137,58 @@ export default function RegisterPaymentModal({ isOpen, onClose, onSuccess, contr
                                 </div>
                             </div>
 
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Anexar Accesorios (Urnas, Reliquarios, etc)</label>
+                                <div className="p-4 bg-white/5 border border-white/10 rounded-[2rem] space-y-4">
+                                    <div className="relative">
+                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={14} />
+                                        <input
+                                            type="text"
+                                            placeholder="Buscar en catálogo..."
+                                            value={searchTerm}
+                                            onChange={e => setSearchTerm(e.target.value)}
+                                            className="w-full bg-black/20 border border-white/5 rounded-xl py-2 pl-10 pr-4 text-xs font-bold"
+                                        />
+                                    </div>
+                                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto custom-scrollbar pr-2">
+                                        {catalog.filter(p => !searchTerm || p.name.toLowerCase().includes(searchTerm.toLowerCase())).map(product => (
+                                            <button
+                                                key={product.id}
+                                                type="button"
+                                                onClick={() => toggleProduct(product)}
+                                                className={cn(
+                                                    "px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-2",
+                                                    formData.selectedProducts.find(p => p.id === product.id)
+                                                        ? "bg-brand-gold-500 text-black border-brand-gold-500 shadow-lg shadow-brand-gold-500/10"
+                                                        : "bg-white/5 text-slate-500 border-white/5 hover:border-brand-gold-500/30"
+                                                )}
+                                            >
+                                                {product.name} (${product.price})
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {formData.selectedProducts.length > 0 && (
+                                        <div className="pt-2 border-t border-white/5">
+                                            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-brand-gold-500 mb-2">Seleccionados:</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {formData.selectedProducts.map(p => (
+                                                    <span key={p.id} className="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-lg text-[9px] font-bold border border-emerald-500/20">
+                                                        {p.name}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Datos Adicionales / Notas</label>
                                 <textarea
                                     value={formData.notes}
                                     onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                                    className="aura-input w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-slate-200 outline-none resize-none h-32"
-                                    placeholder="Agrega información adicional sobre este pago, por ejemplo: adelanto de meses, pago con tarjeta, número de folio, observaciones, etc."
+                                    className="aura-input w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-slate-200 outline-none resize-none h-24"
+                                    placeholder="Información adicional sobre el pago..."
                                 />
                             </div>
 

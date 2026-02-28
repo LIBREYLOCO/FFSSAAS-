@@ -28,6 +28,11 @@ export async function GET(
                     orderBy: {
                         timestamp: "desc"
                     }
+                },
+                sesionCremacion: {
+                    include: {
+                        horno: true
+                    }
                 }
             }
         });

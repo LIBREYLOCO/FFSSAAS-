@@ -34,6 +34,7 @@ model Sucursal {
   salespersons  Salesperson[]
   products      Product[]
   hornos        Horno[]
+  folioCounter  Int      @default(0)
 }
 
 // =========================================================
@@ -269,6 +270,7 @@ model Payment {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   contract    PrevisionContract @relation(fields: [contractId], references: [id])
+  notes       String?
 }
 
 model Salesperson {
