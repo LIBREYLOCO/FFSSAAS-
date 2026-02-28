@@ -26,8 +26,33 @@ export async function PATCH(request: Request) {
         const updated = await prisma.serviceOrder.update({
             where: { id: orderId },
             data: { status: newStatus, updatedAt: new Date() },
-            include: { pet: true, owner: true }
+            include: { pet: true, owner: true, sesionCremacion: true }
         });
+
+        // Auto-generate Cremation Session if COMPLETED but missing one (User bypassed the Oven Tab)
+        if (newStatus === "COMPLETED" && !updated.sesionCremacion) {
+            const horno = await prisma.horno.findFirst();
+            if (horno) {
+                const year = new Date().getFullYear();
+                const countThisYear = await prisma.sesionCremacion.count({
+                    where: { createdAt: { gte: new Date(`${year}-01-01`) } },
+                });
+                const sequential = String(countThisYear + 1).padStart(4, "0");
+                const numeroCertificado = `CERT-${year}-${sequential}`;
+
+                await prisma.sesionCremacion.create({
+                    data: {
+                        numeroCertificado,
+                        hornoId: horno.id,
+                        serviceOrderId: orderId,
+                        operadorNombre: "Sistema Automático",
+                        fechaInicio: new Date(),
+                        fechaFin: new Date(),
+                        observaciones: "Generado automáticamente al completar el servicio",
+                    }
+                });
+            }
+        }
 
         // Create a tracking log entry
         await prisma.trackingLog.create({
