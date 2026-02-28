@@ -100,9 +100,9 @@ export default function VeterinariasPage() {
                                 <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5">
                                     <div className="flex items-center gap-2 text-slate-400 text-sm">
                                         <Heart size={16} className="text-brand-gold-500" />
-                                        <span>Recomendaciones</span>
+                                        <span>Mascotas Referidas</span>
                                     </div>
-                                    <span className="text-lg font-bold">{vet._count.referrals}</span>
+                                    <span className="text-lg font-bold">{vet._count?.referredPets || 0}</span>
                                 </div>
 
                                 <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5">

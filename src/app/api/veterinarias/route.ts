@@ -6,7 +6,7 @@ export async function GET() {
         const veterinaries = await prisma.veterinaryClinic.findMany({
             include: {
                 _count: {
-                    select: { referrals: true }
+                    select: { referredPets: true }
                 }
             },
             orderBy: { businessName: 'asc' }
