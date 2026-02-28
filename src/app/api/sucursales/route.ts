@@ -9,6 +9,7 @@ export async function GET() {
         _count: {
           select: {
             users: true,
+            drivers: true,
             serviceOrders: { where: { status: { notIn: ["COMPLETED"] } } },
           },
         },
