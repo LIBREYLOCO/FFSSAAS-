@@ -26,6 +26,135 @@ import {
 } from "lucide-react";
 import { BACKGROUNDS } from "@/lib/backgrounds";
 
+// ─── Security Tab (Bitácora de Accesos) ──────────────────────────────────────
+interface AccessLogEntry { id: number; name: string; email: string; timestamp: string; }
+
+function SecurityTab() {
+    const [logs,    setLogs]    = useState<AccessLogEntry[]>([]);
+    const [stats,   setStats]   = useState({ today: 0, thisWeek: 0, uniqueUsers: 0 });
+    const [total,   setTotal]   = useState(0);
+    const [page,    setPage]    = useState(1);
+    const [pages,   setPages]   = useState(1);
+    const [loading, setLoading] = useState(true);
+    const [clearing, setClearing] = useState(false);
+
+    const load = async (p = 1) => {
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/security/logs?limit=20&page=${p}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            setLogs(data.logs ?? []);
+            setStats(data.stats ?? { today: 0, thisWeek: 0, uniqueUsers: 0 });
+            setTotal(data.total ?? 0);
+            setPages(data.totalPages ?? 1);
+            setPage(p);
+        } finally { setLoading(false); }
+    };
+
+    useEffect(() => { load(); }, []);
+
+    const purge = async () => {
+        if (!confirm("¿Eliminar logs con más de 90 días?")) return;
+        setClearing(true);
+        const res = await fetch("/api/security/logs", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ days: 90 }),
+        });
+        const data = await res.json();
+        alert(`Se eliminaron ${data.deleted ?? 0} registros.`);
+        setClearing(false);
+        load();
+    };
+
+    const fmt = (iso: string) =>
+        new Date(iso).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" });
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                        <Shield size={18} className="text-brand-gold-500" /> Bitácora de Accesos
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                        Registro de todos los inicios de sesión al sistema.
+                    </p>
+                </div>
+                <div className="flex gap-2">
+                    <button onClick={() => load(page)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-xs font-bold border border-white/10">
+                        <RefreshCcw size={13} className={loading ? "animate-spin" : ""} /> Actualizar
+                    </button>
+                    <button onClick={purge} disabled={clearing} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold border border-red-500/20">
+                        <Trash2 size={13} /> Limpiar &gt;90 días
+                    </button>
+                </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-3 gap-4">
+                {[
+                    { label: "Hoy",            value: stats.today },
+                    { label: "Esta semana",    value: stats.thisWeek },
+                    { label: "Usuarios únicos",value: stats.uniqueUsers },
+                ].map((s) => (
+                    <div key={s.label} className="bg-white/5 rounded-2xl p-4 text-center border border-white/5">
+                        <p className="text-2xl font-black text-brand-gold-500">{s.value}</p>
+                        <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">{s.label}</p>
+                    </div>
+                ))}
+            </div>
+
+            {/* Log table */}
+            {loading ? (
+                <div className="space-y-2">
+                    {[1,2,3,4,5].map(i => <div key={i} className="h-12 rounded-xl bg-white/5 animate-pulse" />)}
+                </div>
+            ) : logs.length === 0 ? (
+                <div className="py-12 text-center text-slate-500 text-sm">Sin registros de acceso.</div>
+            ) : (
+                <div className="space-y-1.5">
+                    {logs.map((log) => (
+                        <div key={log.id} className="flex items-center gap-4 px-4 py-3 rounded-xl bg-white/5 border border-white/5 text-sm">
+                            <div className="w-8 h-8 rounded-full bg-brand-gold-500/10 flex items-center justify-center text-brand-gold-500 text-xs font-black shrink-0">
+                                {log.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-bold truncate">{log.name}</p>
+                                <p className="text-xs text-slate-500 truncate">{log.email}</p>
+                            </div>
+                            <div className="text-xs text-slate-400 shrink-0 text-right">
+                                {fmt(log.timestamp)}
+                            </div>
+                            <div className="w-2 h-2 rounded-full bg-green-400 shrink-0" />
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Pagination */}
+            {pages > 1 && (
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                    <span>{total} registros totales</span>
+                    <div className="flex gap-2">
+                        <button disabled={page <= 1} onClick={() => load(page - 1)}
+                            className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 disabled:opacity-30">
+                            ← Anterior
+                        </button>
+                        <span className="px-3 py-1.5">{page} / {pages}</span>
+                        <button disabled={page >= pages} onClick={() => load(page + 1)}
+                            className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 disabled:opacity-30">
+                            Siguiente →
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 const TABS = [
     { id: "users", label: "Usuarios & Roles", icon: Users },
     { id: "pricing", label: "Precios & Tabuladores", icon: DollarSign },
@@ -824,15 +953,7 @@ export default function ConfigPage() {
                             )}
 
                             {activeTab === "security" && (
-                                <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-                                    <div className="w-16 h-16 rounded-full bg-brand-gold-500/10 flex items-center justify-center text-brand-gold-500">
-                                        <Shield size={32} />
-                                    </div>
-                                    <h3 className="text-lg font-bold">Mantenimiento de Seguridad</h3>
-                                    <p className="text-slate-500 text-sm max-w-xs">
-                                        Esta sección permite configurar auditorías y expiración de sesiones. Próximamente disponible.
-                                    </p>
-                                </div>
+                                <SecurityTab />
                             )}
                         </div>
                     </motion.div>
