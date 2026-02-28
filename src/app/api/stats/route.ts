@@ -60,6 +60,27 @@ export async function GET(request: NextRequest) {
         });
         const serviceDistribution = Object.entries(distribution).map(([name, value]) => ({ name, value }));
 
+        // Operational KPIs
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+
+        const [
+            hornosEnUso,
+            cremacionesHoy,
+            ordenesPendientes,
+            recentActivity,
+        ] = await Promise.all([
+            prisma.sesionCremacion.count({ where: { fechaFin: null } }),
+            prisma.sesionCremacion.count({ where: { fechaInicio: { gte: todayStart } } }),
+            prisma.serviceOrder.count({ where: { ...orderFilter, status: { in: ["PENDING", "PROCESS"] } } }),
+            prisma.serviceOrder.findMany({
+                where: orderFilter,
+                take: 5,
+                orderBy: { createdAt: "desc" },
+                include: { pet: true, owner: true },
+            }),
+        ]);
+
         const stats = [
             { label: "Clientes Totales", value: ownerCount.toString(), icon: "Users", color: "text-brand-gold-500" },
             { label: "Mascotas Activas", value: petCount.toString(), icon: "Dog", color: "text-brand-gold-100" },
@@ -67,17 +88,19 @@ export async function GET(request: NextRequest) {
             { label: "Ingresos Totales", value: `$${totalRevenue.toLocaleString()}`, icon: "TrendingUp", color: "text-white" },
         ];
 
+        const ops = {
+            hornosEnUso,
+            cremacionesHoy,
+            ordenesPendientes,
+        };
+
         return NextResponse.json({
             stats,
-            recentActivity: await prisma.serviceOrder.findMany({
-                where: orderFilter,
-                take: 5,
-                orderBy: { createdAt: 'desc' },
-                include: { pet: true, owner: true }
-            }),
+            ops,
+            recentActivity,
             totalRevenue,
             monthlyRevenue,
-            serviceDistribution
+            serviceDistribution,
         });
     } catch (error) {
         console.error("Dashboard API Error:", error);

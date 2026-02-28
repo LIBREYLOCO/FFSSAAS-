@@ -11,15 +11,15 @@ import {
   TrendingUp,
   Clock,
   ChevronRight,
-  UserPlus,
   Settings,
   Map as MapIcon,
   Search,
-  FlaskConical,
-  Trash2,
-  RefreshCcw,
+  Flame,
+  AlertCircle,
   CheckCircle2,
   Building2,
+  Activity,
+  RefreshCcw,
 } from "lucide-react";
 import {
   AreaChart,
@@ -31,65 +31,51 @@ import {
   ResponsiveContainer,
   PieChart,
   Pie,
-  Cell
+  Cell,
 } from "recharts";
 
 const iconMap: Record<string, any> = {
   Users: Users,
   Dog: Dog,
   HeartHandshake: HeartHandshake,
-  TrendingUp: TrendingUp
+  TrendingUp: TrendingUp,
 };
 
-const COLORS = ['#D4AF37', '#8E6F3E', '#A67C52', '#C0C0C0', '#4A4A4A'];
+const COLORS = ["#D4AF37", "#8E6F3E", "#A67C52", "#C0C0C0", "#4A4A4A"];
+
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  COMPLETED:  { label: "Completado",  color: "text-emerald-400" },
+  PROCESS:    { label: "En proceso",  color: "text-blue-400" },
+  PENDING:    { label: "Pendiente",   color: "text-brand-gold-400" },
+  CANCELLED:  { label: "Cancelado",  color: "text-red-400" },
+};
 
 export default function Home() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [demoLoading, setDemoLoading] = useState(false);
-  const [demoMsg, setDemoMsg] = useState("");
   const [sucursales, setSucursales] = useState<{ id: string; nombre: string; codigo: string }[]>([]);
   const [selectedSucursal, setSelectedSucursal] = useState("");
 
   const fetchStats = useCallback((sucursalId?: string) => {
     const url = sucursalId ? `/api/stats?sucursalId=${sucursalId}` : "/api/stats";
+    setLoading(true);
     fetch(url)
-      .then(res => res.json())
-      .then(d => { setData(d); setLoading(false); })
+      .then((res) => res.json())
+      .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-
-  const runDemo = async (action: "load" | "clear") => {
-    setDemoLoading(true);
-    setDemoMsg("");
-    try {
-      const res = await fetch("/api/demo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
-      });
-      const result = await res.json();
-      setDemoMsg(result.message || (action === "load" ? "✅ Datos cargados" : "🗑️ Datos eliminados"));
-      setTimeout(() => { setDemoMsg(""); fetchStats(selectedSucursal || undefined); }, 3000);
-    } catch {
-      setDemoMsg("❌ Error al procesar la acción");
-    } finally {
-      setDemoLoading(false);
-    }
-  };
 
   useEffect(() => { fetchStats(); }, [fetchStats]);
 
   useEffect(() => {
     fetch("/api/sucursales")
-      .then(r => r.ok ? r.json() : [])
-      .then(d => setSucursales(Array.isArray(d) ? d.filter((s: any) => s.isActive) : []))
-      .catch(() => { });
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setSucursales(Array.isArray(d) ? d.filter((s: any) => s.isActive) : []))
+      .catch(() => {});
   }, []);
 
   const handleSucursalChange = (id: string) => {
     setSelectedSucursal(id);
-    setLoading(true);
     fetchStats(id || undefined);
   };
 
@@ -100,226 +86,266 @@ export default function Home() {
     { label: "Configuración", path: "/config", icon: Settings },
   ];
 
-  const statsWithConfig = (data?.stats || []).map((stat: any, index: number) => {
+  const statsWithConfig = (data?.stats || []).map((stat: any) => {
     const configs: Record<string, { color: string; border: string; glow: string }> = {
       "Clientes Totales": { color: "text-blue-400", border: "group-hover:border-blue-500/50", glow: "from-blue-500/20 to-transparent" },
-      "Mascotas Activas": { color: "text-emerald-400", border: "group-hover:border-emerald-500/50", glow: "from-emerald-500/20 to-transparent" },
-      "Planes Previsión": { color: "text-purple-400", border: "group-hover:border-purple-500/50", glow: "from-purple-500/20 to-transparent" },
-      "Ingresos Mes": { color: "text-brand-gold-400", border: "group-hover:border-brand-gold-500/50", glow: "from-brand-gold-500/20 to-transparent" },
+      "Mascotas Activas":  { color: "text-emerald-400", border: "group-hover:border-emerald-500/50", glow: "from-emerald-500/20 to-transparent" },
+      "Planes Previsión":  { color: "text-purple-400", border: "group-hover:border-purple-500/50", glow: "from-purple-500/20 to-transparent" },
+      "Ingresos Totales":  { color: "text-brand-gold-400", border: "group-hover:border-brand-gold-500/50", glow: "from-brand-gold-500/20 to-transparent" },
     };
-    return { ...stat, config: configs[stat.label] || configs["Ingresos Mes"] };
+    return { ...stat, config: configs[stat.label] || configs["Ingresos Totales"] };
   });
 
   return (
-    <div className="space-y-12 pb-20 max-w-7xl mx-auto px-4">
-      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 pt-4">
+    <div className="space-y-10 pb-20 max-w-7xl mx-auto px-4">
+      {/* ── Header ───────────────────────────────────── */}
+      <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pt-4">
         <motion.div
-          initial={{ opacity: 0, x: -50 }}
+          initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
-          className="relative group"
+          className="flex items-center gap-5"
         >
-          <div className="absolute -inset-8 bg-brand-gold-500/10 blur-[60px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
           <div className="relative">
-            <div className="flex items-center gap-6 mb-6">
-              <div className="relative">
-                <div className="absolute -inset-2 bg-brand-gold-500/20 blur-xl rounded-full animate-pulse" />
-                <img
-                  src="/logo.png"
-                  alt="AURA"
-                  className="w-20 h-20 object-contain relative z-10 drop-shadow-[0_0_15px_rgba(197,160,89,0.4)]"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <div className="h-px w-6 bg-brand-gold-500/50" />
-                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-brand-gold-500/60">
-                    Management Terminal
-                  </span>
-                </div>
-                <h1 className="text-6xl lg:text-7xl font-black tracking-tighter leading-none">
-                  <span className="aura-gradient bg-clip-text text-transparent">FOREVER</span>
-                  <br />
-                  <span className="aura-gradient bg-clip-text text-transparent italic opacity-90">FRIENDS</span>
-                </h1>
-              </div>
+            <div className="absolute -inset-2 bg-brand-gold-500/20 blur-xl rounded-full animate-pulse" />
+            <img
+              src="/logo.png"
+              alt="AURA"
+              className="w-16 h-16 object-contain relative z-10 drop-shadow-[0_0_15px_rgba(197,160,89,0.4)]"
+            />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="h-px w-5 bg-brand-gold-500/50" />
+              <span className="text-[9px] font-black uppercase tracking-[0.4em] text-brand-gold-500/60">
+                Management Terminal
+              </span>
             </div>
-            <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] pl-1 flex items-center gap-2">
-              SISTEMA DE GESTIÓN DE CREMACIÓN <span className="w-1.5 h-1.5 rounded-full bg-brand-gold-500 animate-pulse" /> V1.2.0
+            <h1 className="text-4xl lg:text-5xl font-black tracking-tighter leading-none">
+              <span className="aura-gradient bg-clip-text text-transparent">FOREVER</span>
+              {" "}
+              <span className="aura-gradient bg-clip-text text-transparent italic opacity-90">FRIENDS</span>
+            </h1>
+            <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.3em] mt-1 flex items-center gap-2">
+              Sistema de Gestión
+              <span className="w-1 h-1 rounded-full bg-brand-gold-500 animate-pulse" />
+              V1.2.0
             </p>
           </div>
         </motion.div>
 
-        {sucursales.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="glass-card p-1.5 rounded-[2rem] border border-white/5 bg-black/40 backdrop-blur-2xl flex items-center shadow-2xl"
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => fetchStats(selectedSucursal || undefined)}
+            className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-500 hover:text-brand-gold-500 hover:border-brand-gold-500/30 transition-all"
+            title="Actualizar"
           >
-            <div className="flex items-center gap-4 px-6 py-3">
-              <div className="w-10 h-10 rounded-xl bg-brand-gold-500/10 flex items-center justify-center text-brand-gold-500 border border-brand-gold-500/20">
-                <Building2 size={20} />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Sede Operativa</span>
-                <select
-                  value={selectedSucursal}
-                  onChange={(e) => handleSucursalChange(e.target.value)}
-                  className="bg-transparent text-sm font-bold text-white outline-none cursor-pointer appearance-none pr-8"
-                >
-                  <option value="">Todas las Sedes</option>
-                  {sucursales.map(s => (
-                    <option key={s.id} value={s.id} className="bg-slate-900">{s.nombre}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </motion.div>
-        )}
+            <RefreshCcw size={16} className={loading ? "animate-spin" : ""} />
+          </button>
+
+          {sucursales.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="glass-card px-4 py-2.5 rounded-2xl border border-white/5 flex items-center gap-3"
+            >
+              <Building2 size={16} className="text-brand-gold-500 flex-shrink-0" />
+              <select
+                value={selectedSucursal}
+                onChange={(e) => handleSucursalChange(e.target.value)}
+                className="bg-transparent text-sm font-bold text-white outline-none cursor-pointer appearance-none pr-4"
+              >
+                <option value="">Todas las Sedes</option>
+                {sucursales.map((s) => (
+                  <option key={s.id} value={s.id} className="bg-slate-900">
+                    {s.nombre}
+                  </option>
+                ))}
+              </select>
+            </motion.div>
+          )}
+        </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* ── KPI Stats ─────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {(loading ? [1, 2, 3, 4] : statsWithConfig).map((stat: any, index: number) => {
           const Icon = !loading ? (iconMap[stat.icon] || TrendingUp) : TrendingUp;
-          const href = stat.label === "Clientes Totales" ? "/clientes" :
+          const href =
+            stat.label === "Clientes Totales" ? "/clientes" :
             stat.label === "Mascotas Activas" ? "/mascotas" :
-              stat.label === "Planes Previsión" ? "/prevision" : null;
+            stat.label === "Planes Previsión" ? "/prevision" : null;
+
+          const card = (
+            <div className={cn(
+              "glass-card p-6 rounded-3xl border border-white/5 transition-all duration-500 overflow-hidden h-full",
+              !loading && stat.config?.border,
+              href && "group cursor-pointer hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.4)]"
+            )}>
+              {!loading && (
+                <div className={cn("absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 bg-gradient-to-br", stat.config?.glow)} />
+              )}
+              <div className="relative z-10 flex flex-col h-full">
+                <div className={cn(
+                  "w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-4",
+                  !loading ? stat.config?.color : "text-slate-700"
+                )}>
+                  <Icon size={20} strokeWidth={1.5} />
+                </div>
+                <p className="text-3xl font-black tracking-tighter italic text-white leading-none mb-1">
+                  {loading ? "—" : stat.value}
+                </p>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                  {loading ? "Cargando..." : stat.label}
+                </p>
+              </div>
+            </div>
+          );
 
           return (
             <motion.div
               key={loading ? index : stat.label}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 * index }}
-              className="group relative"
+              className="relative"
             >
-              <Link href={href || "#"} className={cn(
-                "block h-full glass-card p-10 rounded-[3rem] border border-white/5 transition-all duration-700 overflow-hidden",
-                !loading && stat.config.border,
-                !href && "cursor-default"
-              )}>
-                {/* Glow Effect */}
-                {!loading && (
-                  <div className={cn("absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 bg-gradient-to-br", stat.config.glow)} />
-                )}
-
-                <div className="relative z-10 flex flex-col h-full">
-                  <div className="flex items-center justify-between mb-8">
-                    <div className={cn(
-                      "w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center transition-all duration-700 group-hover:scale-110",
-                      !loading ? stat.config.color : "text-slate-700"
-                    )}>
-                      <Icon size={28} strokeWidth={1.5} />
-                    </div>
-                    <div className="flex flex-col items-end">
-                      <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest group-hover:text-brand-gold-500 transition-colors">AURA</span>
-                      <div className="h-1 w-4 bg-white/10 rounded-full mt-1 group-hover:w-8 group-hover:bg-brand-gold-500 transition-all duration-500" />
-                    </div>
-                  </div>
-
-                  <div className="mt-auto">
-                    <h3 className="text-4xl lg:text-5xl font-black tracking-tighter italic text-white mb-1 group-hover:scale-105 origin-left transition-transform duration-500 leading-none">
-                      {loading ? "---" : stat.value}
-                    </h3>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 group-hover:text-slate-300 transition-colors">
-                      {loading ? "Cargando..." : stat.label}
-                    </p>
-                  </div>
-                </div>
-              </Link>
+              {href ? <Link href={href} className="block h-full">{card}</Link> : card}
             </motion.div>
           );
         })}
       </div>
 
-      {/* Analytics Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* ── Operational Strip ─────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="grid grid-cols-3 gap-4"
+      >
+        {[
+          {
+            label: "Hornos en uso",
+            value: loading ? "—" : (data?.ops?.hornosEnUso ?? 0),
+            icon: Flame,
+            color: data?.ops?.hornosEnUso > 0 ? "text-orange-400" : "text-slate-600",
+            bg: data?.ops?.hornosEnUso > 0 ? "bg-orange-500/10" : "bg-white/5",
+            border: data?.ops?.hornosEnUso > 0 ? "border-orange-500/30" : "border-white/5",
+            href: "/hornos",
+            pulse: (data?.ops?.hornosEnUso ?? 0) > 0,
+          },
+          {
+            label: "Cremaciones hoy",
+            value: loading ? "—" : (data?.ops?.cremacionesHoy ?? 0),
+            icon: Activity,
+            color: "text-blue-400",
+            bg: "bg-blue-500/10",
+            border: "border-blue-500/20",
+            href: "/operacion",
+            pulse: false,
+          },
+          {
+            label: "Órdenes pendientes",
+            value: loading ? "—" : (data?.ops?.ordenesPendientes ?? 0),
+            icon: AlertCircle,
+            color: (data?.ops?.ordenesPendientes ?? 0) > 0 ? "text-amber-400" : "text-slate-600",
+            bg: (data?.ops?.ordenesPendientes ?? 0) > 0 ? "bg-amber-500/10" : "bg-white/5",
+            border: (data?.ops?.ordenesPendientes ?? 0) > 0 ? "border-amber-500/20" : "border-white/5",
+            href: "/operacion",
+            pulse: false,
+          },
+        ].map((item) => (
+          <Link key={item.label} href={item.href} className="group">
+            <div className={cn(
+              "glass-card p-4 rounded-2xl border flex items-center gap-3 transition-all duration-300 hover:scale-[1.02]",
+              item.border
+            )}>
+              <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center relative flex-shrink-0", item.bg)}>
+                <item.icon size={18} className={item.color} />
+                {item.pulse && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-orange-500 rounded-full animate-ping" />
+                )}
+              </div>
+              <div>
+                <p className={cn("text-xl font-black tracking-tight", item.color)}>{item.value}</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-600">{item.label}</p>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </motion.div>
+
+      {/* ── Analytics Row ─────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Revenue Chart */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="lg:col-span-2 glass-card-strong p-10 rounded-[4rem] border border-white/5 h-[500px] relative overflow-hidden group shadow-2xl"
+          className="lg:col-span-2 glass-card-strong p-8 rounded-[3rem] border border-white/5 h-[420px] relative overflow-hidden shadow-2xl"
         >
-          <div className="absolute top-0 right-0 w-96 h-96 bg-brand-gold-500/5 blur-[100px] -z-10" />
-
-          <div className="flex items-center justify-between mb-10">
+          <div className="absolute top-0 right-0 w-72 h-72 bg-brand-gold-500/5 blur-[80px] -z-10 rounded-full" />
+          <div className="flex items-center justify-between mb-8">
             <div>
-              <h4 className="text-2xl font-black italic tracking-tighter aura-gradient bg-clip-text text-transparent">Ingresos & Proyección</h4>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Volumen de ventas mensual</p>
+              <h4 className="text-xl font-black italic tracking-tighter aura-gradient bg-clip-text text-transparent">
+                Ingresos & Proyección
+              </h4>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                Volumen de ventas — últimos 6 meses
+              </p>
             </div>
-            <div className="flex gap-2">
-              <div className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400">2024</div>
-            </div>
+            <Link href="/reportes" className="text-[9px] font-black uppercase tracking-widest text-brand-gold-500 hover:text-brand-gold-400 transition-colors flex items-center gap-1">
+              Ver reportes <ChevronRight size={12} />
+            </Link>
           </div>
 
-          <div className="w-full h-[320px]">
+          <div className="w-full h-[280px]">
             {loading ? (
-              <div className="w-full h-full bg-white/5 animate-pulse rounded-[2.5rem]" />
+              <div className="w-full h-full bg-white/5 animate-pulse rounded-[2rem]" />
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data?.monthlyRevenue}>
                   <defs>
                     <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.4} />
+                      <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.35} />
                       <stop offset="95%" stopColor="#D4AF37" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="6 6" stroke="#ffffff05" vertical={false} />
-                  <XAxis
-                    dataKey="name"
-                    stroke="#ffffff20"
-                    fontSize={10}
-                    tickLine={false}
-                    axisLine={false}
-                    dy={10}
-                  />
-                  <YAxis
-                    stroke="#ffffff20"
-                    fontSize={10}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `$${value / 1000}k`}
-                    dx={-10}
-                  />
+                  <CartesianGrid strokeDasharray="4 4" stroke="#ffffff04" vertical={false} />
+                  <XAxis dataKey="name" stroke="#ffffff15" fontSize={10} tickLine={false} axisLine={false} dy={8} />
+                  <YAxis stroke="#ffffff15" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v / 1000}k`} dx={-8} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'rgba(13, 26, 38, 0.9)',
-                      border: '1px solid rgba(212, 175, 55, 0.2)',
-                      borderRadius: '24px',
-                      boxShadow: '0 20px 50px rgba(0,0,0,0.6)',
-                      backdropFilter: 'blur(20px)'
+                      backgroundColor: "rgba(13,26,38,0.95)",
+                      border: "1px solid rgba(212,175,55,0.2)",
+                      borderRadius: "16px",
+                      boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+                      backdropFilter: "blur(20px)",
                     }}
-                    itemStyle={{ color: '#D4AF37', fontWeight: '900', fontSize: '12px' }}
-                    labelStyle={{ color: '#64748b', marginBottom: '4px', fontSize: '10px', fontWeight: 'bold' }}
+                    itemStyle={{ color: "#D4AF37", fontWeight: "900", fontSize: "12px" }}
+                    labelStyle={{ color: "#64748b", fontSize: "10px", fontWeight: "bold" }}
                   />
-                  <Area
-                    type="monotone"
-                    dataKey="revenue"
-                    stroke="#D4AF37"
-                    fillOpacity={1}
-                    fill="url(#colorRev)"
-                    strokeWidth={4}
-                    animationDuration={2000}
-                  />
+                  <Area type="monotone" dataKey="revenue" stroke="#D4AF37" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" animationDuration={1500} />
                 </AreaChart>
               </ResponsiveContainer>
             )}
           </div>
         </motion.div>
 
-        {/* Service Distribution Pie */}
+        {/* Pie Chart */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="glass-card-strong p-10 rounded-[4rem] border border-white/5 flex flex-col items-center justify-between text-center relative overflow-hidden group shadow-2xl"
+          className="glass-card-strong p-8 rounded-[3rem] border border-white/5 flex flex-col justify-between shadow-2xl"
         >
-          <div className="w-full text-left">
-            <h4 className="text-2xl font-black italic tracking-tighter aura-gradient bg-clip-text text-transparent mb-1">Servicios</h4>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Distribución por tipo</p>
+          <div>
+            <h4 className="text-xl font-black italic tracking-tighter aura-gradient bg-clip-text text-transparent mb-0.5">
+              Servicios
+            </h4>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Distribución por tipo</p>
           </div>
 
-          <div className="w-full h-[220px] relative">
+          <div className="w-full h-[180px]">
             {loading ? (
               <div className="w-full h-full bg-white/5 animate-pulse rounded-full" />
             ) : (
@@ -329,26 +355,22 @@ export default function Home() {
                     data={data?.serviceDistribution}
                     cx="50%"
                     cy="50%"
-                    innerRadius={65}
-                    outerRadius={85}
-                    paddingAngle={8}
+                    innerRadius={55}
+                    outerRadius={72}
+                    paddingAngle={6}
                     dataKey="value"
                     stroke="none"
                   >
-                    {data?.serviceDistribution?.map((_: any, index: number) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                        className="hover:opacity-80 transition-opacity cursor-pointer shadow-lg"
-                      />
+                    {data?.serviceDistribution?.map((_: any, i: number) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'rgba(13, 26, 38, 0.9)',
-                      border: '1px solid rgba(212, 175, 55, 0.1)',
-                      borderRadius: '20px',
-                      backdropFilter: 'blur(10px)'
+                      backgroundColor: "rgba(13,26,38,0.95)",
+                      border: "1px solid rgba(212,175,55,0.1)",
+                      borderRadius: "14px",
+                      backdropFilter: "blur(10px)",
                     }}
                   />
                 </PieChart>
@@ -356,131 +378,133 @@ export default function Home() {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3 w-full text-left pt-6 border-t border-white/5">
+          <div className="grid grid-cols-1 gap-2 border-t border-white/5 pt-4">
             {data?.serviceDistribution?.map((item: any, i: number) => (
-              <div key={item.name} className="flex flex-col gap-0.5 group/item">
+              <div key={item.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 group-hover/item:text-slate-300 transition-colors">
-                    {item.name.split('_').join(' ')}
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                    {item.name.split("_").join(" ")}
                   </span>
                 </div>
-                <span className="text-xs font-bold text-slate-400 pl-3.5 italic">{item.value} serv.</span>
+                <span className="text-xs font-bold text-slate-400">{item.value}</span>
               </div>
             ))}
           </div>
         </motion.div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* ── Bottom Row ────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Activity */}
         <motion.div
-          initial={{ opacity: 0, x: -30 }}
+          initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.6 }}
-          className="lg:col-span-2 glass-card p-10 rounded-[4rem] border border-white/5 overflow-hidden flex flex-col min-h-[500px] shadow-2xl relative"
+          className="lg:col-span-2 glass-card p-8 rounded-[3rem] border border-white/5 flex flex-col min-h-[420px] shadow-2xl"
         >
-          <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center justify-between mb-7">
             <div>
-              <h4 className="text-2xl font-black italic tracking-tighter aura-gradient bg-clip-text text-transparent">Flujo Operativo</h4>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Últimos movimientos registrados</p>
+              <h4 className="text-xl font-black italic tracking-tighter aura-gradient bg-clip-text text-transparent">
+                Flujo Operativo
+              </h4>
+              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Últimos movimientos</p>
             </div>
-            <div className="p-3 bg-white/5 rounded-2xl text-brand-gold-500 border border-white/10 group hover:bg-brand-gold-500 hover:text-black transition-all cursor-pointer">
-              <Clock size={20} className="group-hover:rotate-12 transition-transform" />
+            <div className="p-2.5 bg-white/5 rounded-xl text-brand-gold-500 border border-white/10">
+              <Clock size={16} />
             </div>
           </div>
 
-          <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar no-scrollbar">
+          <div className="flex-1 space-y-3 overflow-y-auto no-scrollbar">
             {loading ? (
-              [1, 2, 3, 4].map(i => (
-                <div key={i} className="h-20 rounded-[2rem] bg-white/5 animate-pulse" />
+              [1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-16 rounded-2xl bg-white/5 animate-pulse" />
               ))
-            ) : data?.recentActivity?.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-slate-600 italic py-20">
-                <Search size={48} className="mb-4 opacity-20" />
-                <p className="text-sm font-bold uppercase tracking-widest">Sin actividad reciente</p>
+            ) : (data?.recentActivity?.length ?? 0) === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-slate-600 py-16 gap-3">
+                <Search size={36} className="opacity-20" />
+                <p className="text-xs font-bold uppercase tracking-widest">Sin actividad reciente</p>
               </div>
             ) : (
-              data?.recentActivity?.map((activity: any, idx: number) => (
-                <motion.div
-                  key={activity.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.7 + (idx * 0.05) }}
-                >
-                  <Link
-                    href={`/clientes/${activity.ownerId}`}
-                    className="flex items-center gap-6 p-6 rounded-[2.5rem] bg-white/[0.03] border border-white/[0.03] group hover:border-brand-gold-500/40 hover:bg-white/[0.06] transition-all duration-500 cursor-pointer"
+              data?.recentActivity?.map((activity: any, idx: number) => {
+                const s = STATUS_LABELS[activity.status] || { label: activity.status, color: "text-slate-400" };
+                return (
+                  <motion.div
+                    key={activity.id}
+                    initial={{ opacity: 0, x: -12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.65 + idx * 0.05 }}
                   >
-                    <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-brand-gold-500 group-hover:scale-110 group-hover:bg-brand-gold-500 group-hover:text-black transition-all duration-500 border border-white/5 shadow-xl">
-                      <Dog size={24} strokeWidth={1.5} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-base font-black italic tracking-tight text-white group-hover:text-brand-gold-200 transition-colors">
-                        {activity.serviceType === 'IMMEDIATE' ? 'CREMACIÓN INMEDIATA' : 'SERVICIO PREVISIÓN'}
-                      </p>
-                      <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] group-hover:text-slate-400">
-                        {activity.pet?.name || '---'} • {activity.owner?.name || '---'}
-                      </p>
-                    </div>
-                    <div className="text-right flex flex-col items-end gap-1.5">
-                      <span className={cn(
-                        "text-[9px] font-black px-4 py-1.5 rounded-full border tracking-widest uppercase transition-all duration-500",
-                        activity.status === 'COMPLETED' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                          activity.status === 'PROCESS' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
-                            'bg-brand-gold-500/10 border-brand-gold-500/20 text-brand-gold-400'
-                      )}>
-                        {activity.status}
-                      </span>
-                      <p className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter">
-                        {new Date(activity.createdAt).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}
-                      </p>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))
+                    <Link
+                      href={`/clientes/${activity.ownerId}`}
+                      className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.04] hover:border-brand-gold-500/30 hover:bg-white/[0.05] transition-all group"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-brand-gold-500 group-hover:bg-brand-gold-500 group-hover:text-black transition-all border border-white/5 flex-shrink-0">
+                        <Dog size={18} strokeWidth={1.5} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-black italic tracking-tight text-white group-hover:text-brand-gold-200 transition-colors truncate">
+                          {activity.serviceType === "IMMEDIATE" ? "Cremación Inmediata" : "Servicio Previsión"}
+                        </p>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.15em] truncate">
+                          {activity.pet?.name ?? "—"} · {activity.owner?.name ?? "—"}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <span className={cn("text-[9px] font-black uppercase tracking-widest", s.color)}>
+                          {s.label}
+                        </span>
+                        <span className="text-[9px] text-slate-600 font-bold">
+                          {new Date(activity.createdAt).toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}
+                        </span>
+                      </div>
+                    </Link>
+                  </motion.div>
+                );
+              })
             )}
           </div>
         </motion.div>
 
         {/* Quick Actions */}
         <motion.div
-          initial={{ opacity: 0, x: 30 }}
+          initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.7 }}
-          className="glass-card-strong p-10 rounded-[4rem] border border-white/5 space-y-10 shadow-2xl relative"
+          className="glass-card-strong p-8 rounded-[3rem] border border-white/5 flex flex-col gap-8 shadow-2xl"
         >
           <div>
-            <h4 className="text-2xl font-black italic tracking-tighter aura-gradient bg-clip-text text-transparent">Accesos</h4>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Operaciones rápidas</p>
+            <h4 className="text-xl font-black italic tracking-tighter aura-gradient bg-clip-text text-transparent">Accesos</h4>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Operaciones rápidas</p>
           </div>
 
-          <div className="space-y-4">
-            {quickActions.map((action, i) => (
+          <div className="space-y-3">
+            {quickActions.map((action) => (
               <Link
                 key={action.label}
                 href={action.path}
-                className="w-full p-5 rounded-[2rem] bg-white/[0.03] border border-white/5 flex items-center justify-between group hover:bg-brand-gold-500 transition-all duration-500 hover:shadow-[0_15px_30px_rgba(212,175,55,0.2)] hover:-translate-y-1"
+                className="w-full p-4 rounded-2xl bg-white/[0.03] border border-white/5 flex items-center justify-between group hover:bg-brand-gold-500 transition-all duration-400 hover:shadow-[0_8px_24px_rgba(212,175,55,0.2)] hover:-translate-y-0.5"
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-brand-gold-500 group-hover:bg-black group-hover:text-brand-gold-500 transition-all duration-500 border border-white/5">
-                    <action.icon size={22} strokeWidth={1.5} />
+                <div className="flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-brand-gold-500 group-hover:bg-black transition-all border border-white/5">
+                    <action.icon size={18} strokeWidth={1.5} />
                   </div>
-                  <span className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-300 group-hover:text-black transition-colors">
+                  <span className="text-[11px] font-black uppercase tracking-[0.15em] text-slate-300 group-hover:text-black transition-colors">
                     {action.label}
                   </span>
                 </div>
-                <ChevronRight size={20} className="text-slate-700 group-hover:text-black group-hover:translate-x-1 transition-all" />
+                <ChevronRight size={16} className="text-slate-600 group-hover:text-black group-hover:translate-x-1 transition-all" />
               </Link>
             ))}
           </div>
 
-          <div className="pt-6 border-t border-white/5 opacity-50">
-            <div className="flex items-center gap-4 p-6 rounded-3xl bg-white/5 border border-white/5">
-              <TrendingUp className="text-brand-gold-500" size={24} />
+          {/* System status */}
+          <div className="pt-4 border-t border-white/5">
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20">
+              <CheckCircle2 size={18} className="text-emerald-400 flex-shrink-0" />
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Rendimiento</p>
-                <p className="text-xs font-bold text-white">+12.5% vs mes anterior</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Sistema Operativo</p>
+                <p className="text-[10px] font-bold text-slate-500">Todos los servicios activos</p>
               </div>
             </div>
           </div>
