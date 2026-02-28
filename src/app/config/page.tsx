@@ -22,6 +22,7 @@ import {
     ImageIcon,
     Plus,
     Package,
+    ChevronRight,
 } from "lucide-react";
 import { BACKGROUNDS } from "@/lib/backgrounds";
 
