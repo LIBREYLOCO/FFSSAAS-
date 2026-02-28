@@ -13,12 +13,19 @@ export async function GET(req: NextRequest) {
   try {
     const hornos = await prisma.horno.findMany({
       where: {
-        isActive: true,
+        // ADMIN ve todos; los demás solo ven activos
+        ...(role !== "ADMIN" && { isActive: true }),
         ...(sucursalId && { sucursalId }),
       },
       include: {
-        sucursal: { select: { nombre: true, codigo: true } },
+        sucursal: { select: { id: true, nombre: true, codigo: true } },
         _count: { select: { sesiones: true } },
+        // Sesión activa (sin fecha de fin) para mostrar estado en tiempo real
+        sesiones: {
+          where: { fechaFin: null },
+          select: { id: true, operadorNombre: true, fechaInicio: true },
+          take: 1,
+        },
       },
       orderBy: { nombre: "asc" },
     });
