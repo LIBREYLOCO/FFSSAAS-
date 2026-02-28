@@ -46,6 +46,10 @@ export default function VetCommissionReportModal({ isOpen, onClose, vetId }: Pro
     const [searchTerm, setSearchTerm] = useState("");
     const [expandedVetId, setExpandedVetId] = useState<string | null>(null);
 
+    // Filters
+    const [selectedMonth, setSelectedMonth] = useState<string>("ALL");
+    const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
+
     const isGlobal = !vetId;
 
     useEffect(() => {
@@ -68,13 +72,55 @@ export default function VetCommissionReportModal({ isOpen, onClose, vetId }: Pro
 
     if (!isOpen) return null;
 
+    // Apply Date Filters
+    const processedData = data.map(vet => {
+        const filteredReferrals = vet.referralsDetail.filter(ref => {
+            const d = new Date(ref.createdAt);
+            const refMonth = d.getMonth().toString();
+            const refYear = d.getFullYear().toString();
+
+            const matchMonth = selectedMonth === "ALL" || refMonth === selectedMonth;
+            const matchYear = selectedYear === "ALL" || refYear === selectedYear;
+
+            return matchMonth && matchYear;
+        });
+
+        const filteredPets = vet.referredPets.filter(pet => {
+            const d = new Date(pet.createdAt);
+            const refMonth = d.getMonth().toString();
+            const refYear = d.getFullYear().toString();
+
+            const matchMonth = selectedMonth === "ALL" || refMonth === selectedMonth;
+            const matchYear = selectedYear === "ALL" || refYear === selectedYear;
+
+            return matchMonth && matchYear;
+        });
+
+        return {
+            ...vet,
+            totalReferrals: filteredReferrals.length,
+            totalCommission: filteredReferrals.reduce((acc, r) => acc + r.commissionEarned, 0),
+            referralsDetail: filteredReferrals,
+            referredPets: filteredPets
+        };
+    });
+
     // Filter by name (global mode) or just display
-    const filteredData = data.filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const filteredData = processedData.filter(v => v.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
     // Global KPIs
-    const totalCommissionsAll = data.reduce((acc, v) => acc + v.totalCommission, 0);
-    const totalReferralsAll = data.reduce((acc, v) => acc + v.totalReferrals, 0);
-    const activeClinics = data.filter(v => v.totalReferrals > 0).length;
+    const totalCommissionsAll = processedData.reduce((acc, v) => acc + v.totalCommission, 0);
+    const totalReferralsAll = processedData.reduce((acc, v) => acc + v.totalReferrals, 0);
+    const activeClinics = processedData.filter(v => v.totalReferrals > 0).length;
+
+    const availableYears = Array.from(new Set(
+        data.flatMap(v => v.referralsDetail.map(r => new Date(r.createdAt).getFullYear().toString()))
+    )).sort((a, b) => Number(b) - Number(a)); // Descending
+
+    const months = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
 
     const toggleExpand = (id: string) => {
         if (expandedVetId === id) setExpandedVetId(null);
@@ -170,19 +216,45 @@ export default function VetCommissionReportModal({ isOpen, onClose, vetId }: Pro
                                     </div>
                                 </div>
 
-                                {/* Search (only global) */}
-                                {isGlobal && (
-                                    <div className="relative">
-                                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                                        <input
-                                            type="text"
-                                            placeholder="Buscar veterinaria..."
-                                            value={searchTerm}
-                                            onChange={e => setSearchTerm(e.target.value)}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-sm outline-none focus:border-brand-gold-500/50 transition-colors"
-                                        />
+                                {/* Filters Block */}
+                                <div className="flex flex-col sm:flex-row gap-4">
+                                    {isGlobal && (
+                                        <div className="relative flex-1">
+                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                                            <input
+                                                type="text"
+                                                placeholder="Buscar veterinaria..."
+                                                value={searchTerm}
+                                                onChange={e => setSearchTerm(e.target.value)}
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-4 text-sm outline-none focus:border-brand-gold-500/50 transition-colors"
+                                            />
+                                        </div>
+                                    )}
+
+                                    <div className="flex flex-1 gap-2">
+                                        <select
+                                            value={selectedMonth}
+                                            onChange={e => setSelectedMonth(e.target.value)}
+                                            className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-sm outline-none focus:border-brand-gold-500/50 transition-colors text-slate-200"
+                                        >
+                                            <option value="ALL">Mes: Todos</option>
+                                            {months.map((m, i) => (
+                                                <option key={i} value={i.toString()}>{m}</option>
+                                            ))}
+                                        </select>
+
+                                        <select
+                                            value={selectedYear}
+                                            onChange={e => setSelectedYear(e.target.value)}
+                                            className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-3 px-4 text-sm outline-none focus:border-brand-gold-500/50 transition-colors text-slate-200"
+                                        >
+                                            <option value="ALL">Año: Todos</option>
+                                            {availableYears.map(y => (
+                                                <option key={y} value={y}>{y}</option>
+                                            ))}
+                                        </select>
                                     </div>
-                                )}
+                                </div>
 
                                 {/* Vet List */}
                                 <div className="space-y-4">
@@ -210,12 +282,8 @@ export default function VetCommissionReportModal({ isOpen, onClose, vetId }: Pro
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col sm:flex-row items-center gap-6">
-                                                        <div className="text-right">
-                                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Este Mes</p>
-                                                            <p className="font-bold text-brand-gold-300">{formatMXN(vet.currentMonthCommission || 0)}</p>
-                                                        </div>
                                                         <div className="text-right hidden sm:block">
-                                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Pagado Total</p>
+                                                            <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-1">Comisión del Periodo</p>
                                                             <p className="font-bold text-brand-gold-500">{formatMXN(vet.totalCommission)}</p>
                                                         </div>
                                                         <div className="text-right hidden sm:block">
@@ -259,6 +327,7 @@ export default function VetCommissionReportModal({ isOpen, onClose, vetId }: Pro
 
                                                                 <h4 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4 mt-8">Detalle de Comisiones (Servicios Completados)</h4>
 
+                                                                {/* Optional details per service */}
                                                                 {vet.referralsDetail.length === 0 ? (
                                                                     <p className="text-sm text-slate-500 italic">No hay referencias con comisión (completadas) para esta clínica.</p>
                                                                 ) : (
