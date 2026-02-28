@@ -7,7 +7,7 @@ const getSecret = () =>
         process.env.AUTH_SECRET || "aura-dev-secret-change-in-production"
     );
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // Rutas públicas que no requieren sesión

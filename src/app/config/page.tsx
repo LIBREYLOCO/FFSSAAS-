@@ -38,7 +38,8 @@ export default function ConfigPage() {
 
     // State for real data from API
     const [users, setUsers] = useState<any[]>([]);
-    const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "VENDEDOR" });
+    const [sucursales, setSucursales] = useState<{ id: string; nombre: string; codigo: string }[]>([]);
+    const [newUser, setNewUser] = useState({ name: "", email: "", password: "", role: "VENDEDOR", sucursalId: "" });
 
     const [pricing, setPricing] = useState({
         "0-5kg": 2500,
@@ -96,18 +97,23 @@ export default function ConfigPage() {
     const fetchUsers = async () => {
         try {
             const res = await fetch("/api/users");
-            if (res.ok) {
-                const data = await res.json();
-                setUsers(data);
-            }
+            if (res.ok) setUsers(await res.json());
         } catch (error) {
             console.error("Error fetching users:", error);
         }
     };
 
+    const fetchSucursales = async () => {
+        try {
+            const res = await fetch("/api/sucursales");
+            if (res.ok) setSucursales(await res.json());
+        } catch {}
+    };
+
     useEffect(() => {
         fetchUsers();
         fetchSystemConfig();
+        fetchSucursales();
     }, []);
 
     const handleAddUser = async () => {
@@ -122,7 +128,7 @@ export default function ConfigPage() {
             if (res.ok) {
                 await fetchUsers();
                 setIsAddUserModalOpen(false);
-                setNewUser({ name: "", email: "", password: "", role: "VENDEDOR" });
+                setNewUser({ name: "", email: "", password: "", role: "VENDEDOR", sucursalId: "" });
             } else {
                 alert(data.error || "Error al crear usuario");
             }
@@ -314,6 +320,11 @@ export default function ConfigPage() {
                                                             {!user.isActive && <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 uppercase tracking-widest">Inactivo</span>}
                                                         </div>
                                                         <p className="text-xs text-slate-500">{user.email}</p>
+                                                        {user.sucursal && (
+                                                            <span className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full mt-0.5 inline-block">
+                                                                {user.sucursal.nombre}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2">
@@ -324,12 +335,18 @@ export default function ConfigPage() {
                                                         className={`text-[10px] font-black px-3 py-1.5 rounded-xl border appearance-none cursor-pointer focus:outline-none transition-all ${
                                                             user.role === "ADMIN"
                                                                 ? "bg-brand-gold-500/10 border-brand-gold-500/20 text-brand-gold-500"
+                                                                : user.role === "GERENTE_SUCURSAL"
+                                                                ? "bg-purple-500/10 border-purple-500/20 text-purple-400"
+                                                                : user.role === "OPERADOR"
+                                                                ? "bg-orange-500/10 border-orange-500/20 text-orange-400"
                                                                 : user.role === "DRIVER"
                                                                 ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
                                                                 : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
                                                         }`}
                                                     >
                                                         <option value="ADMIN">ADMIN</option>
+                                                        <option value="GERENTE_SUCURSAL">GERENTE SUC.</option>
+                                                        <option value="OPERADOR">OPERADOR</option>
                                                         <option value="VENDEDOR">VENDEDOR</option>
                                                         <option value="DRIVER">DRIVER</option>
                                                     </select>
@@ -614,13 +631,30 @@ export default function ConfigPage() {
                                 <select
                                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50 transition-all appearance-none"
                                     value={newUser.role}
-                                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                                    onChange={(e) => setNewUser({ ...newUser, role: e.target.value, sucursalId: "" })}
                                 >
                                     <option value="ADMIN">Administrador — Acceso total</option>
+                                    <option value="GERENTE_SUCURSAL">Gerente de Sucursal — Su propia sede</option>
+                                    <option value="OPERADOR">Operador — Operación y hornos</option>
                                     <option value="VENDEDOR">Vendedor — Ventas y previsión</option>
-                                    <option value="DRIVER">Driver — Logística y rutas</option>
+                                    <option value="DRIVER">Conductor — Logística y rutas</option>
                                 </select>
                             </div>
+                            {(newUser.role === "GERENTE_SUCURSAL" || newUser.role === "OPERADOR" || newUser.role === "DRIVER") && (
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Sucursal</label>
+                                    <select
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50 transition-all appearance-none"
+                                        value={newUser.sucursalId}
+                                        onChange={(e) => setNewUser({ ...newUser, sucursalId: e.target.value })}
+                                    >
+                                        <option value="">Sin sucursal asignada</option>
+                                        {sucursales.map(s => (
+                                            <option key={s.id} value={s.id}>{s.nombre} ({s.codigo})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                         </div>
                         <div className="flex gap-4 mt-8">
                             <button onClick={() => setIsAddUserModalOpen(false)} className="flex-1 py-4 rounded-2xl bg-white/5 font-bold text-sm uppercase tracking-widest hover:bg-white/10 transition-all">
