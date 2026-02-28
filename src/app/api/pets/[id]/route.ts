@@ -18,7 +18,7 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
         if (photoUrl !== undefined) updateData.photoUrl = photoUrl;
         if (referralSource !== undefined) {
             updateData.referralSource = referralSource;
-            updateData.clinicId = referralSource === "VETERINARIA" ? clinicId : null;
+            updateData.clinicId = (referralSource === "VETERINARIA" && clinicId) ? clinicId : null;
         }
 
         const pet = await prisma.pet.update({
@@ -27,9 +27,12 @@ export async function PATCH(request: Request, props: { params: Promise<{ id: str
         });
 
         return NextResponse.json(pet);
-    } catch (error) {
-        console.error("Error updating pet:", error);
-        return NextResponse.json({ error: "Failed to update pet" }, { status: 500 });
+    } catch (error: any) {
+        console.error("Prisma error complete:", error);
+
+        // Pass back actual Prisma error text to the frontend 
+        const errMessage = error?.message || error?.toString() || "Unknown Prisma schema error";
+        return NextResponse.json({ error: errMessage }, { status: 500 });
     }
 }
 

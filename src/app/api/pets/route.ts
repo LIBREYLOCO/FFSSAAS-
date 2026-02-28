@@ -35,13 +35,15 @@ export async function POST(request: Request) {
                 color,
                 photoUrl, // the Supabase public URL or base64 string
                 referralSource: referralSource || "DIRECTO",
-                clinicId: referralSource === "VETERINARIA" ? clinicId : null
+                clinicId: (referralSource === "VETERINARIA" && clinicId) ? clinicId : null
             }
         });
 
         return NextResponse.json(pet);
-    } catch (error) {
-        console.error(error);
-        return NextResponse.json({ error: "Error creating pet" }, { status: 500 });
+    } catch (error: any) {
+        console.error("Prisma error complete:", error);
+
+        const errMessage = error?.message || error?.toString() || "Unknown Prisma schema error";
+        return NextResponse.json({ error: errMessage }, { status: 500 });
     }
 }
