@@ -23,38 +23,23 @@ export async function PATCH(request: Request) {
             return NextResponse.json({ error: "Invalid status value" }, { status: 400 });
         }
 
+        // Strict Validation for CREMATING status
+        if (newStatus === "CREMATING") {
+            const session = await prisma.sesionCremacion.findUnique({
+                where: { serviceOrderId: orderId }
+            });
+            if (!session) {
+                return NextResponse.json({ error: "Debe registrar la cremación (horno y operador) antes de iniciar el proceso." }, { status: 400 });
+            }
+        }
+
         const updated = await prisma.serviceOrder.update({
             where: { id: orderId },
             data: { status: newStatus, updatedAt: new Date() },
             include: { pet: true, owner: true, sesionCremacion: true }
         });
 
-        // Auto-generate Cremation Session if COMPLETED but missing one (User bypassed the Oven Tab)
-        if (newStatus === "COMPLETED" && !updated.sesionCremacion) {
-            const horno = await prisma.horno.findFirst();
-            if (horno) {
-                const year = new Date().getFullYear();
-                const countThisYear = await prisma.sesionCremacion.count({
-                    where: { createdAt: { gte: new Date(`${year}-01-01`) } },
-                });
-                const sequential = String(countThisYear + 1).padStart(4, "0");
-                const numeroCertificado = `CERT-${year}-${sequential}`;
-
-                await prisma.sesionCremacion.create({
-                    data: {
-                        numeroCertificado,
-                        hornoId: horno.id,
-                        serviceOrderId: orderId,
-                        operadorNombre: "Sistema Automático",
-                        fechaInicio: new Date(),
-                        fechaFin: new Date(),
-                        observaciones: "Generado automáticamente al completar el servicio",
-                    }
-                });
-            }
-        }
-
-        // Create a tracking log entry
+        // Tracking log entry...
         await prisma.trackingLog.create({
             data: {
                 serviceOrderId: orderId,

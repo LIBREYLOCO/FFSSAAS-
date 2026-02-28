@@ -477,14 +477,28 @@ export default function OperacionPage() {
                           {nextStatus && (() => {
                             const nextInfo = statusInfo(nextStatus);
                             const NextIcon = nextInfo.icon;
+                            const isCremationTransition = nextStatus === "CREMATING";
+                            const isRegistrationMissing = isCremationTransition && !order.sesionCremacion;
+
                             return (
-                              <button
-                                onClick={() => advance(order.id, nextStatus)}
-                                disabled={isUpdating}
-                                className="btn-primary w-full py-3 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm"
-                              >
-                                {isUpdating ? <Loader2 size={16} className="animate-spin" /> : <><NextIcon size={16} />{`→ ${nextInfo.label}`}</>}
-                              </button>
+                              <div className="space-y-1">
+                                <button
+                                  onClick={() => advance(order.id, nextStatus)}
+                                  disabled={isUpdating || isRegistrationMissing}
+                                  className={`w-full py-3 rounded-2xl flex items-center justify-center gap-2 font-bold text-sm transition-all ${isRegistrationMissing
+                                      ? "bg-white/5 border border-white/10 text-slate-600 cursor-not-allowed cursor-not-allowed"
+                                      : "btn-primary"
+                                    }`}
+                                >
+                                  {isUpdating ? <Loader2 size={16} className="animate-spin" /> : <><NextIcon size={16} />{`→ ${nextInfo.label}`}</>}
+                                </button>
+                                {isRegistrationMissing && (
+                                  <div className="flex items-center justify-center gap-1.5 py-1 px-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400">
+                                    <AlertCircle size={10} />
+                                    <span className="text-[9px] font-black uppercase tracking-widest">Requiere registro de cremación</span>
+                                  </div>
+                                )}
+                              </div>
                             );
                           })()}
 
