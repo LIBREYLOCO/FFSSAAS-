@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, TrendingUp, Save, Loader2, DollarSign } from "lucide-react";
+import { X, TrendingUp, Save, Loader2, DollarSign, Upload, User } from "lucide-react";
 import AddressFormSection, { AddressValues, emptyAddress } from "./AddressFormSection";
+import { supabase } from "@/lib/supabaseClient";
 
 interface Salesperson {
     id: string;
@@ -12,6 +13,7 @@ interface Salesperson {
     commissionRate: number | string;
     phone?: string | null;
     email?: string | null;
+    photoUrl?: string | null;
     streetName?: string | null;
     streetNumber?: string | null;
     interiorNum?: string | null;
@@ -34,28 +36,29 @@ interface EditSalespersonModalProps {
 
 const INPUT = "w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-slate-200 outline-none focus:border-brand-gold-500/50 transition-colors placeholder:text-slate-600 text-sm";
 const LABEL = "text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1";
-
 const LEVELS = ["JUNIOR", "SENIOR", "EXPERT", "MASTER"];
 
 export default function EditSalespersonModal({ isOpen, onClose, onSuccess, person }: EditSalespersonModalProps) {
     const [loading, setLoading] = useState(false);
+    const [uploadingPhoto, setUploadingPhoto] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
     const [formData, setFormData] = useState({
-        name: "",
-        level: "JUNIOR",
-        commissionRate: "5.0",
-        phone: "",
-        email: "",
+        name: "", level: "JUNIOR", commissionRate: "5.0",
+        phone: "", email: "", photoUrl: "",
     });
     const [address, setAddress] = useState<AddressValues>(emptyAddress());
 
     useEffect(() => {
-        if (person) {
+        if (person && isOpen) {
             setFormData({
                 name: person.name ?? "",
                 level: person.level ?? "JUNIOR",
                 commissionRate: String(Number(person.commissionRate).toFixed(1)),
                 phone: person.phone ?? "",
                 email: person.email ?? "",
+                photoUrl: person.photoUrl ?? "",
             });
             setAddress({
                 streetName: person.streetName ?? "",
@@ -69,18 +72,54 @@ export default function EditSalespersonModal({ isOpen, onClose, onSuccess, perso
                 latitude: person.latitude != null ? String(person.latitude) : "",
                 longitude: person.longitude != null ? String(person.longitude) : "",
             });
+            setPreviewUrl(person.photoUrl ?? null);
+            setSelectedFile(null);
         }
-    }, [person]);
+    }, [person, isOpen]);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setSelectedFile(file);
+            setPreviewUrl(URL.createObjectURL(file));
+        }
+    };
 
     const handleSubmit = async () => {
         if (!person || !formData.name.trim()) return;
         setLoading(true);
+        let photoUrl = formData.photoUrl;
+
         try {
+            // Upload photo to Supabase if a new file was selected
+            if (selectedFile) {
+                setUploadingPhoto(true);
+                const ext = selectedFile.name.split('.').pop();
+                const path = `vendedores/${person.id}-${Date.now()}.${ext}`;
+                const { error: uploadError } = await supabase.storage
+                    .from('pets-photos')
+                    .upload(path, selectedFile, { upsert: true });
+
+                if (uploadError) {
+                    alert(`No se pudo subir la foto: ${uploadError.message}`);
+                    setUploadingPhoto(false);
+                    setLoading(false);
+                    return;
+                }
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('pets-photos')
+                    .getPublicUrl(path);
+                photoUrl = publicUrl;
+                setUploadingPhoto(false);
+            }
+
             const res = await fetch(`/api/vendedores/${person.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...formData, ...address }),
+                body: JSON.stringify({ ...formData, photoUrl, ...address }),
             });
+
             if (res.ok) {
                 onSuccess();
                 onClose();
@@ -92,10 +131,13 @@ export default function EditSalespersonModal({ isOpen, onClose, onSuccess, perso
             alert("Error de conexión");
         } finally {
             setLoading(false);
+            setUploadingPhoto(false);
         }
     };
 
     if (!isOpen || !person) return null;
+
+    const isBusy = loading || uploadingPhoto;
 
     return (
         <AnimatePresence>
@@ -122,8 +164,33 @@ export default function EditSalespersonModal({ isOpen, onClose, onSuccess, perso
                         </button>
                     </div>
 
-                    {/* Body */}
                     <div className="px-8 py-6 space-y-5">
+                        {/* Photo upload */}
+                        <div className="flex flex-col items-center gap-3 py-2">
+                            <div className="relative w-24 h-24 rounded-full border-2 border-dashed border-white/20 bg-white/5 overflow-hidden group cursor-pointer">
+                                {previewUrl ? (
+                                    <img src={previewUrl} alt="foto" className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-slate-500">
+                                        <User size={36} />
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Upload size={18} className="text-white" />
+                                    <span className="text-[9px] text-white font-bold mt-1">Cambiar</span>
+                                </div>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
+                                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                />
+                            </div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                                {uploadingPhoto ? "Subiendo foto…" : "Foto de perfil (opcional)"}
+                            </p>
+                        </div>
+
                         {/* Professional info */}
                         <div className="space-y-3">
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Información del Vendedor</p>
@@ -161,7 +228,7 @@ export default function EditSalespersonModal({ isOpen, onClose, onSuccess, perso
                                     <label className={LABEL}>Correo Electrónico</label>
                                     <input type="email" value={formData.email}
                                         onChange={e => setFormData(p => ({ ...p, email: e.target.value }))}
-                                        className={INPUT} placeholder="vendedor@aura.lat" />
+                                        className={INPUT} placeholder="vendedor@ejemplo.com" />
                                 </div>
                                 <div className="space-y-1">
                                     <label className={LABEL}>Teléfono</label>
@@ -172,7 +239,7 @@ export default function EditSalespersonModal({ isOpen, onClose, onSuccess, perso
                             </div>
                         </div>
 
-                        {/* Address */}
+                        {/* Address with map */}
                         <div className="border-t border-white/5 pt-5">
                             <AddressFormSection
                                 values={address}
@@ -183,15 +250,14 @@ export default function EditSalespersonModal({ isOpen, onClose, onSuccess, perso
 
                     {/* Footer */}
                     <div className="sticky bottom-0 glass-card px-8 pb-8 pt-4 rounded-b-[40px] border-t border-white/5 flex gap-3">
-                        <button onClick={onClose}
-                            className="flex-1 py-3 rounded-2xl bg-white/5 hover:bg-white/10 text-sm font-bold uppercase tracking-widest transition-all">
+                        <button onClick={onClose} disabled={isBusy}
+                            className="flex-1 py-3 rounded-2xl bg-white/5 hover:bg-white/10 text-sm font-bold uppercase tracking-widest transition-all disabled:opacity-40">
                             Cancelar
                         </button>
-                        <button onClick={handleSubmit}
-                            disabled={loading || !formData.name.trim()}
+                        <button onClick={handleSubmit} disabled={isBusy || !formData.name.trim()}
                             className="flex-1 py-3 rounded-2xl bg-brand-gold-500 text-black font-black text-sm uppercase tracking-widest shadow-lg disabled:opacity-40 hover:bg-brand-gold-400 transition-all flex items-center justify-center gap-2">
-                            {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                            {loading ? "Guardando..." : "Guardar Cambios"}
+                            {isBusy ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                            {uploadingPhoto ? "Subiendo foto…" : isBusy ? "Guardando…" : "Guardar Cambios"}
                         </button>
                     </div>
                 </motion.div>

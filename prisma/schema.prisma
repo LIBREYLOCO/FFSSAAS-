@@ -276,6 +276,7 @@ model Salesperson {
   // Contact info
   phone          String?
   email          String?
+  photoUrl       String?
   // Structured address
   streetName     String?
   streetNumber   String?

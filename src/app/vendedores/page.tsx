@@ -2,15 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, Plus, Target, Edit2 } from "lucide-react";
+import { TrendingUp, Plus, Target, Edit2, BarChart2, User } from "lucide-react";
 import RegisterSalespersonModal from "@/components/RegisterSalespersonModal";
 import EditSalespersonModal from "@/components/EditSalespersonModal";
+import CommissionReportModal from "@/components/CommissionReportModal";
+
+const LEVEL_STYLE: Record<string, string> = {
+    JUNIOR: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+    SENIOR: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
+    EXPERT: "text-brand-gold-500 bg-brand-gold-500/10 border-brand-gold-500/20",
+    MASTER: "text-purple-400 bg-purple-500/10 border-purple-500/20",
+};
 
 export default function VendedoresPage() {
     const [salespeople, setSalespeople] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isRegisterOpen, setIsRegisterOpen] = useState(false);
     const [editingPerson, setEditingPerson] = useState<any | null>(null);
+    const [reportPersonId, setReportPersonId] = useState<string | null>(null);
 
     const fetchSalespeople = () => {
         setLoading(true);
@@ -20,16 +29,10 @@ export default function VendedoresPage() {
                 setSalespeople(Array.isArray(data) ? data : []);
                 setLoading(false);
             })
-            .catch(err => {
-                console.error("Fetch salespeople error:", err);
-                setSalespeople([]);
-                setLoading(false);
-            });
+            .catch(() => { setSalespeople([]); setLoading(false); });
     };
 
-    useEffect(() => {
-        fetchSalespeople();
-    }, []);
+    useEffect(() => { fetchSalespeople(); }, []);
 
     return (
         <div className="space-y-8">
@@ -38,26 +41,20 @@ export default function VendedoresPage() {
                     <h2 className="text-3xl font-bold italic tracking-tight">Fuerza de Ventas</h2>
                     <p className="text-slate-400">Gestiona vendedores y sus esquemas de comisiones.</p>
                 </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="btn-primary flex items-center gap-2 w-fit"
-                >
-                    <Plus size={20} />
-                    Nuevo Vendedor
+                <button onClick={() => setIsRegisterOpen(true)} className="btn-primary flex items-center gap-2 w-fit">
+                    <Plus size={20} /> Nuevo Vendedor
                 </button>
             </header>
 
             <RegisterSalespersonModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                isOpen={isRegisterOpen}
+                onClose={() => setIsRegisterOpen(false)}
                 onSuccess={fetchSalespeople}
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {loading ? (
-                    [1, 2].map(i => (
-                        <div key={i} className="glass-card h-48 rounded-3xl animate-pulse" />
-                    ))
+                    [1, 2, 3].map(i => <div key={i} className="glass-card h-56 rounded-3xl animate-pulse" />)
                 ) : salespeople.length === 0 ? (
                     <div className="col-span-full py-20 text-center space-y-4 glass-card rounded-3xl">
                         <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto">
@@ -73,8 +70,9 @@ export default function VendedoresPage() {
                             animate={{ opacity: 1, scale: 1 }}
                             className="glass-card p-6 rounded-3xl relative overflow-hidden group"
                         >
-                            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                                <Target size={80} />
+                            {/* Decorative bg icon */}
+                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
+                                <Target size={90} />
                             </div>
 
                             {/* Edit button */}
@@ -86,15 +84,23 @@ export default function VendedoresPage() {
                                 <Edit2 size={14} />
                             </button>
 
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 rounded-2xl bg-brand-gold-500/10 flex items-center justify-center text-brand-gold-500 font-bold text-xl">
-                                    {person.name.charAt(0)}
+                            {/* Avatar + Name row */}
+                            <div className="flex items-center gap-4 mb-5">
+                                <div className="relative flex-shrink-0 w-14 h-14 rounded-2xl overflow-hidden border border-white/10 bg-brand-gold-500/10">
+                                    {person.photoUrl ? (
+                                        <img src={person.photoUrl} alt={person.name}
+                                            className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-brand-gold-500 font-black text-xl">
+                                            {person.name.charAt(0).toUpperCase()}
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="text-xl font-bold truncate">{person.name}</h3>
-                                    <div className="flex items-center gap-2 flex-wrap mt-0.5">
-                                        <span className="text-xs font-bold uppercase tracking-widest text-brand-gold-500">
-                                            Nivel {person.level}
+                                <div className="flex-1 min-w-0 pr-8">
+                                    <h3 className="text-lg font-bold truncate">{person.name}</h3>
+                                    <div className="flex items-center gap-2 flex-wrap mt-1">
+                                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border uppercase tracking-widest ${LEVEL_STYLE[person.level] ?? "text-slate-400 bg-white/5 border-white/10"}`}>
+                                            {person.level}
                                         </span>
                                         {person.sucursal && (
                                             <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 uppercase tracking-wider">
@@ -105,19 +111,33 @@ export default function VendedoresPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            {/* Contact info */}
+                            {(person.email || person.phone) && (
+                                <div className="mb-4 px-1 space-y-0.5">
+                                    {person.phone && <p className="text-[11px] text-slate-500 truncate">📞 {person.phone}</p>}
+                                    {person.email && <p className="text-[11px] text-slate-500 truncate">✉️ {person.email}</p>}
+                                </div>
+                            )}
+
+                            {/* Stats */}
+                            <div className="grid grid-cols-2 gap-3">
                                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
                                     <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Comisión</p>
-                                    <p className="text-lg font-bold">{Number(person.commissionRate).toFixed(1)}%</p>
+                                    <p className="text-lg font-black text-brand-gold-500">{Number(person.commissionRate).toFixed(1)}%</p>
                                 </div>
                                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Ventas</p>
-                                    <p className="text-lg font-bold">{person._count.contracts}</p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Contratos</p>
+                                    <p className="text-lg font-black">{person._count?.contracts ?? 0}</p>
                                 </div>
                             </div>
 
-                            <div className="mt-6 pt-6 border-t border-white/5">
-                                <button className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-xs font-bold uppercase tracking-widest">
+                            {/* Commission report button */}
+                            <div className="mt-4 pt-4 border-t border-white/5">
+                                <button
+                                    onClick={() => setReportPersonId(person.id)}
+                                    className="w-full py-3 rounded-xl bg-brand-gold-500/10 hover:bg-brand-gold-500/20 text-brand-gold-500 border border-brand-gold-500/20 transition-colors text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2"
+                                >
+                                    <BarChart2 size={14} />
                                     Ver Reporte de Comisiones
                                 </button>
                             </div>
@@ -125,11 +145,18 @@ export default function VendedoresPage() {
                     ))
                 )}
             </div>
+
             <EditSalespersonModal
                 isOpen={!!editingPerson}
                 onClose={() => setEditingPerson(null)}
                 onSuccess={fetchSalespeople}
                 person={editingPerson}
+            />
+
+            <CommissionReportModal
+                isOpen={!!reportPersonId}
+                onClose={() => setReportPersonId(null)}
+                personId={reportPersonId}
             />
         </div>
     );

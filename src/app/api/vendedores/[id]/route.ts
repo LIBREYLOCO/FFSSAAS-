@@ -1,6 +1,33 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 
+export async function GET(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        const person = await prisma.salesperson.findUnique({
+            where: { id },
+            include: {
+                sucursal: { select: { nombre: true, codigo: true } },
+                contracts: {
+                    include: {
+                        owner: { select: { name: true } },
+                        plan: { select: { name: true, price: true } },
+                        payments: { orderBy: { paymentDate: 'desc' } },
+                    },
+                    orderBy: { startDate: 'desc' },
+                },
+            },
+        });
+        if (!person) return NextResponse.json({ error: "Not found" }, { status: 404 });
+        return NextResponse.json(person);
+    } catch (error: any) {
+        return NextResponse.json({ error: "Error fetching salesperson", detail: error.message }, { status: 500 });
+    }
+}
+
 export async function PATCH(
     request: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -9,7 +36,7 @@ export async function PATCH(
         const { id } = await params;
         const body = await request.json();
         const {
-            name, level, commissionRate, phone, email,
+            name, level, commissionRate, phone, email, photoUrl,
             streetName, streetNumber, interiorNum, neighborhood,
             city, state, country, zipCode, latitude, longitude,
         } = body;
@@ -22,6 +49,7 @@ export async function PATCH(
                 ...(commissionRate !== undefined && { commissionRate: Number(commissionRate) }),
                 ...(phone !== undefined && { phone }),
                 ...(email !== undefined && { email }),
+                ...(photoUrl !== undefined && { photoUrl }),
                 ...(streetName !== undefined && { streetName }),
                 ...(streetNumber !== undefined && { streetNumber }),
                 ...(interiorNum !== undefined && { interiorNum }),
