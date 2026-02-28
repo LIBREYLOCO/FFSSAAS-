@@ -32,8 +32,19 @@ export async function PATCH(
         const user = await prisma.user.update({
             where: { id },
             data,
-            select: { id: true, name: true, email: true, role: true, isActive: true },
+            select: { id: true, name: true, email: true, role: true, isActive: true, sucursalId: true },
         });
+
+        // If role changed to VENDEDOR → auto-create Salesperson entry
+        if (role === "VENDEDOR") {
+            await prisma.salesperson.create({
+                data: { name: user.name, level: "JUNIOR", commissionRate: 5.0, ...(user.sucursalId && { sucursalId: user.sucursalId }) },
+            }).catch(() => { }); // ignore if already exists
+        } else if (role === "DRIVER") {
+            await prisma.driver.create({
+                data: { name: user.name, isActive: true, ...(user.sucursalId && { sucursalId: user.sucursalId }) },
+            }).catch(() => { });
+        }
 
         return NextResponse.json(user);
     } catch (error) {

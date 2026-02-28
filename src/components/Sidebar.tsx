@@ -14,7 +14,6 @@ import {
     LogOut,
     Wrench,
     Building2,
-    Flame,
 } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -42,7 +41,6 @@ const navItems = [
     { name: "Previsión",      href: "/prevision",         icon: HeartHandshake,  roles: ["ADMIN", "GERENTE_SUCURSAL", "VENDEDOR"] },
     { name: "Vendedores",     href: "/vendedores",        icon: TrendingUp,      roles: ["ADMIN", "GERENTE_SUCURSAL"] },
     { name: "Operación",      href: "/operacion",         icon: Wrench,          roles: ["ADMIN", "GERENTE_SUCURSAL", "OPERADOR", "DRIVER"] },
-    { name: "Hornos",         href: "/hornos",            icon: Flame,           roles: ["ADMIN", "GERENTE_SUCURSAL", "OPERADOR"] },
     { name: "Veterinarias",   href: "/veterinarias",      icon: MapPin,          roles: ["ADMIN", "GERENTE_SUCURSAL"] },
     { name: "Sucursales",     href: "/config/sucursales", icon: Building2,       roles: ["ADMIN"] },
     { name: "Configuración",  href: "/config",            icon: Settings,        roles: ["ADMIN"] },

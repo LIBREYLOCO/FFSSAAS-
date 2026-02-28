@@ -57,3 +57,43 @@ export async function GET(
         }, { status: 500 });
     }
 }
+
+export async function PATCH(
+    request: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        const body = await request.json();
+        const {
+            name, email, phone,
+            streetName, streetNumber, interiorNum, neighborhood,
+            city, state, country, zipCode,
+            latitude, longitude,
+        } = body;
+
+        const updated = await prisma.owner.update({
+            where: { id },
+            data: {
+                ...(name !== undefined && { name }),
+                ...(email !== undefined && { email }),
+                ...(phone !== undefined && { phone }),
+                ...(streetName !== undefined && { streetName }),
+                ...(streetNumber !== undefined && { streetNumber }),
+                ...(interiorNum !== undefined && { interiorNum }),
+                ...(neighborhood !== undefined && { neighborhood }),
+                ...(city !== undefined && { city }),
+                ...(state !== undefined && { state }),
+                ...(country !== undefined && { country }),
+                ...(zipCode !== undefined && { zipCode }),
+                ...(latitude !== undefined && { latitude: latitude ? parseFloat(latitude) : null }),
+                ...(longitude !== undefined && { longitude: longitude ? parseFloat(longitude) : null }),
+            },
+        });
+
+        return NextResponse.json(updated);
+    } catch (error: any) {
+        console.error("Error updating owner:", error);
+        return NextResponse.json({ error: "Error updating owner", details: error.message }, { status: 500 });
+    }
+}

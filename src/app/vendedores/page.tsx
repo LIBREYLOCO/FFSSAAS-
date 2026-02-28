@@ -75,22 +75,29 @@ export default function VendedoresPage() {
                                 <Target size={80} />
                             </div>
 
-                            <div className="flex items-center gap-4 mb-6">
+                            <div className="flex items-center gap-4 mb-4">
                                 <div className="w-12 h-12 rounded-2xl bg-brand-gold-500/10 flex items-center justify-center text-brand-gold-500 font-bold text-xl">
                                     {person.name.charAt(0)}
                                 </div>
-                                <div>
-                                    <h3 className="text-xl font-bold">{person.name}</h3>
-                                    <span className="text-xs font-bold uppercase tracking-widest text-brand-gold-500">
-                                        Nivel {person.level}
-                                    </span>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="text-xl font-bold truncate">{person.name}</h3>
+                                    <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                                        <span className="text-xs font-bold uppercase tracking-widest text-brand-gold-500">
+                                            Nivel {person.level}
+                                        </span>
+                                        {person.sucursal && (
+                                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 uppercase tracking-wider">
+                                                {person.sucursal.nombre}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
                                     <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Comisión</p>
-                                    <p className="text-lg font-bold">{(person.commissionRate * 100).toFixed(0)}%</p>
+                                    <p className="text-lg font-bold">{Number(person.commissionRate).toFixed(1)}%</p>
                                 </div>
                                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
                                     <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Ventas</p>

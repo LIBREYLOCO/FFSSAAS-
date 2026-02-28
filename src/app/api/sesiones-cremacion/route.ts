@@ -1,6 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 
+// GET /api/sesiones-cremacion
+// Query params: ?activas=true (solo sin fechaFin) | ?sucursalId=xxx
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = req.nextUrl;
+    const soloActivas  = searchParams.get("activas") === "true";
+    const sucursalId   = searchParams.get("sucursalId") ?? undefined;
+
+    const sesiones = await prisma.sesionCremacion.findMany({
+      where: {
+        ...(soloActivas && { fechaFin: null }),
+        ...(sucursalId && { horno: { sucursalId } }),
+      },
+      include: {
+        horno: { select: { nombre: true, codigo: true, sucursal: { select: { nombre: true, codigo: true } } } },
+        serviceOrder: { include: { pet: true, owner: true } },
+      },
+      orderBy: { fechaInicio: "desc" },
+      take: 100,
+    });
+    return NextResponse.json(sesiones);
+  } catch (error) {
+    console.error("GET /api/sesiones-cremacion error:", error);
+    return NextResponse.json({ error: "Error al obtener sesiones" }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { serviceOrderId, hornoId, operadorNombre, fechaInicio, observaciones } = await req.json();

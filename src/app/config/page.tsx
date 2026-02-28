@@ -18,7 +18,10 @@ import {
     KeyRound,
     X,
     Building2,
+    Check,
+    ImageIcon,
 } from "lucide-react";
+import { BACKGROUNDS } from "@/lib/backgrounds";
 
 const TABS = [
     { id: "users", label: "Usuarios & Roles", icon: Users },
@@ -56,6 +59,7 @@ export default function ConfigPage() {
         contactPhone: "55 1234 5678",
         contactWhatsApp: "55 8765 4321",
         primaryColor: "#D4AF37",
+        backgroundId: "none",
         allowPublicTracking: true,
     });
 
@@ -87,7 +91,11 @@ export default function ConfigPage() {
             const res = await fetch("/api/system-config");
             if (res.ok) {
                 const data = await res.json();
-                setSystem(data);
+                setSystem({
+                    ...data,
+                    // Parse boolean values stored as strings
+                    allowPublicTracking: data.allowPublicTracking === "true" || data.allowPublicTracking === true,
+                });
             }
         } catch (error) {
             console.error("Error fetching system config:", error);
@@ -107,7 +115,7 @@ export default function ConfigPage() {
         try {
             const res = await fetch("/api/sucursales");
             if (res.ok) setSucursales(await res.json());
-        } catch {}
+        } catch { }
     };
 
     useEffect(() => {
@@ -202,20 +210,22 @@ export default function ConfigPage() {
     const handleSave = async () => {
         setLoading(true);
         try {
-            // Guardar configuración del sistema (sólo estamos enfocándonos en "system" por ahora)
             const res = await fetch("/api/system-config", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(system),
             });
+            const data = await res.json();
             if (res.ok) {
-                alert("Configuración de marca y contratos guardada exitosamente.");
+                alert("Configuración guardada exitosamente.");
+                // Notify ThemeProvider immediately so background/color apply without waiting for poll
+                window.dispatchEvent(new CustomEvent("aura:config-updated", { detail: system }));
             } else {
-                alert("Hubo un error al guardar la configuración.");
+                alert(`Error al guardar: ${data.detail || data.error || "Error desconocido"}`);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error saving config:", error);
-            alert("Error de conexión al guardar.");
+            alert(`Error de conexión: ${error?.message ?? error}`);
         } finally {
             setLoading(false);
         }
@@ -332,17 +342,16 @@ export default function ConfigPage() {
                                                     <select
                                                         value={user.role}
                                                         onChange={(e) => handleChangeRole(user.id, e.target.value)}
-                                                        className={`text-[10px] font-black px-3 py-1.5 rounded-xl border appearance-none cursor-pointer focus:outline-none transition-all ${
-                                                            user.role === "ADMIN"
-                                                                ? "bg-brand-gold-500/10 border-brand-gold-500/20 text-brand-gold-500"
-                                                                : user.role === "GERENTE_SUCURSAL"
+                                                        className={`text-[10px] font-black px-3 py-1.5 rounded-xl border appearance-none cursor-pointer focus:outline-none transition-all ${user.role === "ADMIN"
+                                                            ? "bg-brand-gold-500/10 border-brand-gold-500/20 text-brand-gold-500"
+                                                            : user.role === "GERENTE_SUCURSAL"
                                                                 ? "bg-purple-500/10 border-purple-500/20 text-purple-400"
                                                                 : user.role === "OPERADOR"
-                                                                ? "bg-orange-500/10 border-orange-500/20 text-orange-400"
-                                                                : user.role === "DRIVER"
-                                                                ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
-                                                                : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                                                        }`}
+                                                                    ? "bg-orange-500/10 border-orange-500/20 text-orange-400"
+                                                                    : user.role === "DRIVER"
+                                                                        ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                                                                        : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                                                            }`}
                                                     >
                                                         <option value="ADMIN">ADMIN</option>
                                                         <option value="GERENTE_SUCURSAL">GERENTE SUC.</option>
@@ -497,6 +506,62 @@ export default function ConfigPage() {
                                                     <span className="text-xs font-mono text-slate-500 uppercase">{system.primaryColor}</span>
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    {/* ── Fondo de Pantalla ───────────────────────── */}
+                                    <div className="pt-8 border-t border-white/[0.06]">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <ImageIcon size={16} className="text-brand-gold-500" />
+                                            <h2 className="text-base font-bold text-slate-200">Fondo de Pantalla</h2>
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 mb-6">
+                                            Elige una fotografía emocional como fondo. Aparecerá difuminada detrás del sistema, sin afectar la legibilidad.
+                                        </p>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                                            {BACKGROUNDS.map((bg) => {
+                                                const isSelected = system.backgroundId === bg.id;
+                                                return (
+                                                    <button
+                                                        key={bg.id}
+                                                        type="button"
+                                                        onClick={() => setSystem({ ...system, backgroundId: bg.id })}
+                                                        className={`relative group rounded-2xl overflow-hidden aspect-[3/2] transition-all duration-200 ${isSelected
+                                                            ? "ring-2 ring-brand-gold-500 shadow-[0_0_20px_rgba(197,160,89,0.35)]"
+                                                            : "ring-1 ring-white/10 hover:ring-brand-gold-500/40 hover:shadow-[0_0_12px_rgba(197,160,89,0.2)]"
+                                                            }`}
+                                                    >
+                                                        {/* Thumbnail image or placeholder */}
+                                                        {bg.thumb ? (
+                                                            <img
+                                                                src={bg.thumb}
+                                                                alt={bg.label}
+                                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-[#0d1a26] flex items-center justify-center">
+                                                                <div className="text-center space-y-1">
+                                                                    <div className="text-xl">✦</div>
+                                                                    <div className="text-[9px] text-brand-gold-500 font-bold uppercase tracking-widest">Estrellas</div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Dark overlay + label */}
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                                                        <div className="absolute bottom-0 left-0 right-0 p-2">
+                                                            <p className="text-[10px] font-bold text-white/90 truncate leading-tight">{bg.label}</p>
+                                                        </div>
+
+                                                        {/* Selected checkmark */}
+                                                        {isSelected && (
+                                                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-brand-gold-500 flex items-center justify-center shadow-lg">
+                                                                <Check size={11} className="text-[#0d1a26]" strokeWidth={3} />
+                                                            </div>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
 

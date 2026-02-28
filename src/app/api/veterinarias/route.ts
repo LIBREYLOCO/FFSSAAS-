@@ -12,11 +12,10 @@ export async function GET() {
             orderBy: { businessName: 'asc' }
         });
 
-        // Map to expected frontend format
         const mappedVeterinaries = veterinaries.map(v => ({
             ...v,
             name: v.businessName,
-            fixedFee: 0 // Default value as it was removed from schema
+            fixedFee: 0,
         }));
 
         return NextResponse.json(mappedVeterinaries);
@@ -29,7 +28,13 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name, fixedFee } = body;
+        const {
+            name, fixedFee, taxId, contactName, phone,
+            // Structured address fields
+            streetName, streetNumber, interiorNum, neighborhood,
+            city, state, country, zipCode,
+            latitude, longitude,
+        } = body;
 
         if (!name) {
             return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -38,14 +43,26 @@ export async function POST(request: Request) {
         const newVet = await prisma.veterinaryClinic.create({
             data: {
                 businessName: name,
-                // fixedFee: Number(fixedFee) || 500 // Field removed from schema
+                taxId: taxId || null,
+                contactName: contactName || null,
+                phone: phone || null,
+                streetName: streetName || null,
+                streetNumber: streetNumber || null,
+                interiorNum: interiorNum || null,
+                neighborhood: neighborhood || null,
+                city: city || null,
+                state: state || null,
+                country: country || null,
+                zipCode: zipCode || null,
+                latitude: latitude ? parseFloat(latitude) : null,
+                longitude: longitude ? parseFloat(longitude) : null,
             }
         });
 
         return NextResponse.json({
             ...newVet,
             name: newVet.businessName,
-            fixedFee: 0
+            fixedFee: 0,
         });
     } catch (error) {
         return NextResponse.json({ error: "Error creating veterinary" }, { status: 500 });

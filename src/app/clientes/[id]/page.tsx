@@ -12,6 +12,7 @@ import NewServiceOrderModal from "@/components/NewServiceOrderModal";
 import AddPetToClientModal from "@/components/AddPetToClientModal";
 import RegisterPaymentModal from "@/components/RegisterPaymentModal";
 import EditPetModal from "@/components/EditPetModal";
+import EditClientModal from "@/components/EditClientModal";
 import { Edit2 } from "lucide-react";
 
 export default function ClientDetailPage() {
@@ -25,6 +26,7 @@ export default function ClientDetailPage() {
     const [isEditPetModalOpen, setIsEditPetModalOpen] = useState(false);
     const [selectedPetToEdit, setSelectedPetToEdit] = useState<any>(null);
     const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+    const [isEditClientModalOpen, setIsEditClientModalOpen] = useState(false);
 
     const fetchOwner = async () => {
         if (!params.id) return;
@@ -93,8 +95,11 @@ export default function ClientDetailPage() {
                     <ArrowLeft size={16} /> Volver
                 </button>
                 <div className="flex gap-4">
-                    <button className="bg-white/5 hover:bg-white/10 p-2 rounded-xl border border-white/5 transition-colors text-slate-400">
-                        Editar Perfil
+                    <button
+                        onClick={() => setIsEditClientModalOpen(true)}
+                        className="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl border border-white/5 transition-colors text-slate-400 flex items-center gap-2 text-sm font-bold"
+                    >
+                        <Edit2 size={16} /> Editar Perfil
                     </button>
                     <button
                         onClick={() => setIsOrderModalOpen(true)}
@@ -142,7 +147,17 @@ export default function ClientDetailPage() {
                                 <div className="p-2 bg-white/5 rounded-lg border border-white/5 text-brand-gold-500">
                                     <MapPin size={16} />
                                 </div>
-                                <p>{owner.address || "No registrada"}</p>
+                                <p className="text-sm leading-snug">
+                                    {owner.streetName
+                                        ? [
+                                            [owner.streetName, owner.streetNumber].filter(Boolean).join(" "),
+                                            owner.interiorNum,
+                                            owner.neighborhood,
+                                            [owner.city, owner.state].filter(Boolean).join(", "),
+                                            owner.zipCode,
+                                        ].filter(Boolean).join(" · ")
+                                        : owner.address || "Dirección no registrada"}
+                                </p>
                             </div>
                         </div>
 
@@ -456,6 +471,13 @@ export default function ClientDetailPage() {
                 onClose={() => setIsEditPetModalOpen(false)}
                 onSuccess={fetchOwner}
                 pet={selectedPetToEdit}
+            />
+
+            <EditClientModal
+                isOpen={isEditClientModalOpen}
+                onClose={() => setIsEditClientModalOpen(false)}
+                onSuccess={fetchOwner}
+                owner={owner}
             />
         </div>
     );

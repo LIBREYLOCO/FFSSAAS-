@@ -25,7 +25,13 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name, email, phone, address, serviceType, petName, petSpecies, petBreed } = body;
+        const {
+            name, email, phone, address, serviceType, petName, petSpecies, petBreed,
+            // Structured address fields
+            streetName, streetNumber, interiorNum, neighborhood,
+            city, state, country, zipCode,
+            latitude, longitude,
+        } = body;
 
         if (!name) {
             return NextResponse.json({ error: "Name is required" }, { status: 400 });
@@ -34,7 +40,13 @@ export async function POST(request: Request) {
         const result = await prisma.$transaction(async (tx) => {
             // 1. Create Owner
             const owner = await tx.owner.create({
-                data: { name, email, phone, address }
+                data: {
+                    name, email, phone, address,
+                    streetName, streetNumber, interiorNum, neighborhood,
+                    city, state, country, zipCode,
+                    latitude: latitude ? parseFloat(latitude) : null,
+                    longitude: longitude ? parseFloat(longitude) : null,
+                }
             });
 
             // 2. Handle Service Type logic

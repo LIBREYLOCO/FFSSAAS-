@@ -77,7 +77,19 @@ model Owner {
   name          String
   email         String?
   phone         String?
+  // Legacy single-line address (kept for historical records)
   address       String?
+  // Structured address fields
+  streetName    String?   // Nombre de la calle / Av. / Blvd.
+  streetNumber  String?   // Número exterior
+  interiorNum   String?   // Número interior / Depto / Apt
+  neighborhood  String?   // Colonia / Barrio
+  city          String?   // Ciudad / Municipio
+  state         String?   // Estado / Provincia
+  country       String?   // País
+  zipCode       String?   // Código Postal
+  latitude      Float?
+  longitude     Float?
   source        String?
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
@@ -90,9 +102,19 @@ model VeterinaryClinic {
   id           String              @id @default(cuid())
   businessName String
   taxId        String?
+  // Legacy single-line address (kept for historical records)
   address      String?
   latitude     Float?
   longitude    Float?
+  // Structured address fields
+  streetName   String?   // Nombre de la calle / Av. / Blvd.
+  streetNumber String?   // Número exterior
+  interiorNum  String?   // Número interior / Local / Suite
+  neighborhood String?   // Colonia / Barrio
+  city         String?   // Ciudad / Municipio
+  state        String?   // Estado / Provincia
+  country      String?   // País
+  zipCode      String?   // Código Postal
   contactName  String?
   phone        String?
   priceListId  Int                 @default(1)

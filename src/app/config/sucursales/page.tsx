@@ -11,11 +11,12 @@ import {
 } from "lucide-react";
 
 // ── Leaflet (client-only, no SSR) ─────────────────────────────────────────────
-const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false });
-const TileLayer    = dynamic(() => import("react-leaflet").then((m) => m.TileLayer),    { ssr: false });
-const Marker       = dynamic(() => import("react-leaflet").then((m) => m.Marker),       { ssr: false });
-const Popup        = dynamic(() => import("react-leaflet").then((m) => m.Popup),        { ssr: false });
-const Polyline     = dynamic(() => import("react-leaflet").then((m) => m.Polyline),     { ssr: false });
+const MapContainer     = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false });
+const TileLayer        = dynamic(() => import("react-leaflet").then((m) => m.TileLayer),    { ssr: false });
+const Marker           = dynamic(() => import("react-leaflet").then((m) => m.Marker),       { ssr: false });
+const Popup            = dynamic(() => import("react-leaflet").then((m) => m.Popup),        { ssr: false });
+const Polyline         = dynamic(() => import("react-leaflet").then((m) => m.Polyline),     { ssr: false });
+const LocationPickerMap = dynamic(() => import("@/components/LocationPickerMap"),            { ssr: false });
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface Sucursal {
@@ -63,6 +64,7 @@ export default function SucursalesPage() {
   const [saving, setSaving]           = useState(false);
   const [geocoding, setGeocoding]     = useState(false);
   const [error, setError]             = useState("");
+  const [flyTrigger, setFlyTrigger]   = useState(0);
   const [leafletReady, setLeafletReady] = useState(false);
   const [L, setL]                     = useState<any>(null);
 
@@ -105,6 +107,7 @@ export default function SucursalesPage() {
     setEditing(null);
     setForm(EMPTY_FORM);
     setError("");
+    setFlyTrigger(0);
     setModalOpen(true);
   };
 
@@ -117,6 +120,7 @@ export default function SucursalesPage() {
       latitude: s.latitude?.toString() ?? "", longitude: s.longitude?.toString() ?? "",
     });
     setError("");
+    setFlyTrigger(0);
     setModalOpen(true);
   };
 
@@ -136,8 +140,9 @@ export default function SucursalesPage() {
       const data = await res.json();
       if (data[0]) {
         setForm((f) => ({ ...f, latitude: data[0].lat, longitude: data[0].lon }));
+        setFlyTrigger((t) => t + 1);
       } else {
-        setError("No se encontró la dirección. Verifica los datos o ingresa las coordenadas manualmente.");
+        setError("No se encontró la dirección. Haz clic en el mapa para ubicar la sucursal manualmente.");
       }
     } catch {
       setError("Error al geocodificar. Verifica tu conexión.");
@@ -599,7 +604,7 @@ export default function SucursalesPage() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="glass-card rounded-3xl p-8 w-full max-w-lg space-y-6 max-h-[90vh] overflow-y-auto"
+              className="glass-card rounded-3xl p-8 w-full max-w-2xl space-y-6 max-h-[92vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold italic">
@@ -682,45 +687,71 @@ export default function SucursalesPage() {
                   />
                 </div>
 
-                {/* Geocoding section */}
+                {/* Location picker section */}
                 <div className="col-span-2 border-t border-white/10 pt-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <label className="text-xs text-slate-400">Coordenadas GPS</label>
+                    <label className="text-xs text-slate-400 font-bold flex items-center gap-1.5">
+                      <Navigation size={13} className="text-brand-gold-500" />
+                      Ubicación en el mapa
+                    </label>
                     <button
                       onClick={geocodeForm}
                       disabled={geocoding || (!form.direccion && !form.ciudad)}
-                      className="flex items-center gap-1.5 text-xs text-brand-gold-500 hover:text-brand-gold-400 disabled:opacity-40 transition-colors"
+                      className="flex items-center gap-1.5 text-xs text-brand-gold-500 hover:text-brand-gold-400 disabled:opacity-40 transition-colors font-bold"
                     >
                       {geocoding
                         ? <Loader2 size={12} className="animate-spin" />
-                        : <Navigation size={12} />}
-                      Geocodificar dirección
+                        : <Search size={12} />}
+                      {geocoding ? "Buscando..." : "Buscar por dirección"}
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[10px] text-slate-500 mb-1">Latitud</label>
-                      <input
-                        className="input-field w-full text-sm"
-                        placeholder="20.6597"
-                        value={form.latitude}
-                        onChange={(e) => setForm({ ...form, latitude: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] text-slate-500 mb-1">Longitud</label>
-                      <input
-                        className="input-field w-full text-sm"
-                        placeholder="-103.3496"
-                        value={form.longitude}
-                        onChange={(e) => setForm({ ...form, longitude: e.target.value })}
-                      />
-                    </div>
+
+                  {/* Interactive map */}
+                  <div className="relative rounded-2xl overflow-hidden border border-white/10" style={{ isolation: "isolate" }}>
+                    <LocationPickerMap
+                      lat={form.latitude}
+                      lng={form.longitude}
+                      flyTrigger={flyTrigger}
+                      height={260}
+                      onLocationChange={(lat, lng) =>
+                        setForm((f) => ({
+                          ...f,
+                          latitude: lat.toFixed(6),
+                          longitude: lng.toFixed(6),
+                        }))
+                      }
+                    />
+                    {/* Overlay hint when no pin set */}
+                    {!form.latitude && !form.longitude && (
+                      <div className="absolute inset-0 flex items-end justify-center pb-4 pointer-events-none">
+                        <div className="bg-black/75 backdrop-blur-sm rounded-2xl px-4 py-2.5 text-center">
+                          <p className="text-xs text-slate-200 font-bold">Haz clic en el mapa para colocar el pin</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">o busca la dirección con el botón de arriba</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-[10px] text-slate-600">
-                    Presiona "Geocodificar dirección" para obtenerlas automáticamente,
-                    o ingrésalas manualmente desde Google Maps.
-                  </p>
+
+                  {/* Coords display / clear */}
+                  {form.latitude && form.longitude ? (
+                    <div className="flex items-center gap-2 text-xs bg-green-500/10 border border-green-500/20 rounded-xl px-3 py-2">
+                      <Navigation size={12} className="text-green-400 shrink-0" />
+                      <span className="font-mono text-green-300">
+                        {parseFloat(form.latitude).toFixed(5)}, {parseFloat(form.longitude).toFixed(5)}
+                      </span>
+                      <button
+                        onClick={() => setForm((f) => ({ ...f, latitude: "", longitude: "" }))}
+                        className="ml-auto text-slate-500 hover:text-red-400 transition-colors"
+                        title="Borrar coordenadas"
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-slate-600">
+                      Sin coordenadas · La sucursal no aparecerá en el mapa de rutas.
+                    </p>
+                  )}
                 </div>
               </div>
 

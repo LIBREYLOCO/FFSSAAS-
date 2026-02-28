@@ -20,6 +20,7 @@ export async function GET() {
             contactPhone: "55 1234 5678",
             contactWhatsApp: "55 8765 4321",
             primaryColor: "#D4AF37",
+            backgroundId: "none",
             ...configObject // DB overrides defaults
         };
 
@@ -39,20 +40,21 @@ export async function POST(request: Request) {
         // e.g. { appName: "New Name", legalName: "New..." }
 
         const updates = Object.entries(body).map(async ([key, value]) => {
-            if (typeof value === 'string') {
-                return prisma.systemConfig.upsert({
-                    where: { key: key },
-                    update: { value: value },
-                    create: { key: key, value: value, group: "SYSTEM" }
-                });
-            }
+            // Convert any value (boolean, number, etc.) to a string for storage
+            const strValue = value !== null && value !== undefined ? String(value) : "";
+            return prisma.systemConfig.upsert({
+                where: { key: key },
+                update: { value: strValue },
+                create: { key: key, value: strValue, group: "SYSTEM" }
+            });
         });
 
         await Promise.all(updates);
 
         return NextResponse.json({ success: true, message: "Configuration updated successfully" });
-    } catch (error) {
-        console.error("Error updating system config:", error);
-        return NextResponse.json({ error: "Failed to update configuration" }, { status: 500 });
+    } catch (error: any) {
+        const msg = error?.message ?? String(error);
+        console.error("Error updating system config:", msg);
+        return NextResponse.json({ error: "Failed to update configuration", detail: msg }, { status: 500 });
     }
 }
