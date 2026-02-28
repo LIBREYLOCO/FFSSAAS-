@@ -101,6 +101,10 @@ export default function RegisterPetModal({ isOpen, onClose, onSuccess }: Props) 
                 setFormData({ name: "", species: "Perro", breed: "", birthDate: "", ownerId: "", weightKg: "", color: "", photoUrl: "", referralSource: "DIRECTO", clinicId: "" });
                 setPreviewUrl(null);
                 setSelectedFile(null);
+            } else {
+                const data = await res.json();
+                console.error("Error backend:", data);
+                alert(`Error al registrar: ${data.error || "Falla de servidor"}`);
             }
         } catch (error) {
             console.error(error);

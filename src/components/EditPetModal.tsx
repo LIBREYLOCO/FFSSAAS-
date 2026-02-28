@@ -103,6 +103,10 @@ export default function EditPetModal({ isOpen, onClose, onSuccess, pet }: Props)
             if (res.ok) {
                 onSuccess();
                 onClose();
+            } else {
+                const data = await res.json();
+                console.error("Error backend:", data);
+                alert(`Error al guardar: ${data.error || "Falla en el servidor"}`);
             }
         } catch (error) {
             console.error(error);
