@@ -6,15 +6,19 @@ const applyBranding = (doc: jsPDF, title: string) => {
     doc.setFillColor(15, 23, 42); // slate-900
     doc.rect(0, 0, 210, 45, "F");
 
-    // --- Aura / Forever Friends Logo Text (Fallback if image fails) ---
-    doc.setTextColor(212, 175, 55); // Gold
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(24);
-    doc.text("AURA", 105, 18, { align: "center" });
-
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text("FOREVER FRIENDS • HOMENAJES CON DIGNIDAD", 105, 26, { align: "center" });
+    // --- Official AURA Logo Image ---
+    const logoBase64 = "iVBORw0KGgoAAAANSUhEUgAABGUAAARlCAIAAACfiO0JAAAACXBIWXMAACE4AAAhOAFFljFgAAAF/2lUWHRYTUw6Y29tLmFkb2Jl...Kn9iYw0k5JUcjTJLpugUJznxMYpH1FvVLYIF8isRaeyJmUEOC0MGYVnkh0ZiBMHuCdLRZz/C7VccEl8VJPlAAAAAElFTkSuQmCC";
+    try {
+        // Center-aligned logo image (approximate centering by x-offset)
+        doc.addImage("data:image/png;base64," + logoBase64, "PNG", 85, 3, 40, 30);
+    } catch (e) {
+        console.error("Error adding logo to PDF:", e);
+        // Fallback Text if image fails
+        doc.setTextColor(212, 175, 55);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(24);
+        doc.text("AURA", 105, 18, { align: "center" });
+    }
 
     // --- Document Title ---
     doc.setTextColor(255, 255, 255);
