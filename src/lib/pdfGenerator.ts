@@ -3,6 +3,54 @@ export const generateCremationCertificate = async (_data: any): Promise<ArrayBuf
     throw new Error("generateCremationCertificate is server-only. Use the API endpoint /api/sesiones-cremacion/[id]/certificado instead.");
 };
 
+// ─── Branding & Helpers ──────────────────────────────────────────────────────
+
+const GOLD: [number, number, number] = [212, 175, 55];
+const DARK: [number, number, number] = [15, 23, 42];
+const GRAY: [number, number, number] = [100, 100, 100];
+const LIGHT_GRAY: [number, number, number] = [245, 245, 245];
+
+/** Helper: aplica un encabezado premium con logo a los PDFs del cliente */
+const applyAuraClientHeader = async (doc: any, title: string) => {
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // Fondo oscuro
+    doc.setFillColor(...DARK);
+    doc.rect(0, 0, pageWidth, 46, "F");
+
+    // Logo
+    try {
+        const logoRes = await fetch("/logo.png");
+        if (logoRes.ok) {
+            const blob = await logoRes.blob();
+            const logoBase64 = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+            });
+            doc.addImage(logoBase64, "PNG", pageWidth / 2 - 20, 3, 40, 30);
+        } else {
+            throw new Error();
+        }
+    } catch {
+        doc.setTextColor(...GOLD);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.text("AURA", pageWidth / 2, 22, { align: "center" });
+    }
+
+    // Título en blanco
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bolditalic");
+    doc.text(title.toUpperCase(), pageWidth / 2, 40, { align: "center" });
+
+    // Línea dorada
+    doc.setDrawColor(...GOLD);
+    doc.setLineWidth(0.5);
+    doc.line(20, 46, pageWidth - 20, 46);
+};
+
 // ─── Recibos de Mensualidades ─────────────────────────────────────────────────
 
 interface InstallmentReceiptsData {
@@ -17,9 +65,6 @@ export const generateInstallmentReceiptsPDF = async (data: InstallmentReceiptsDa
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
     const pageWidth = doc.internal.pageSize.getWidth();
     const marginX = 20;
-    const gold: [number, number, number] = [212, 175, 55];
-    const dark: [number, number, number] = [30, 30, 30];
-    const gray: [number, number, number] = [100, 100, 100];
     const green: [number, number, number] = [34, 120, 60];
 
     const startDate = new Date(data.contract.startDate);
@@ -30,68 +75,49 @@ export const generateInstallmentReceiptsPDF = async (data: InstallmentReceiptsDa
         const dueDate = new Date(startDate);
         dueDate.setMonth(dueDate.getMonth() + i + 1);
 
-        // Header
-        doc.setFontSize(20);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(...gold);
-        doc.text("AURA", marginX, 22);
+        await applyAuraClientHeader(doc, "Recibo de Mensualidad");
 
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(...gray);
-        doc.text("FOREVER FRIENDS  ·  " + (data.system.legalName || ""), marginX, 27);
-
-        doc.setDrawColor(...gold);
-        doc.setLineWidth(0.5);
-        doc.line(marginX, 31, pageWidth - marginX, 31);
-
-        // Title
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(...dark);
-        doc.text("RECIBO DE MENSUALIDAD", pageWidth / 2, 42, { align: "center" });
-
-        // Receipt number + contract ref
+        // Receipt info
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(...gray);
-        doc.text(`Recibo ${i + 1} de ${data.plan.installmentsCount}`, marginX, 52);
-        doc.text(`Contrato: ${data.contract.id.slice(0, 8).toUpperCase()}`, pageWidth - marginX, 52, { align: "right" });
+        doc.setTextColor(...GRAY);
+        doc.text(`Recibo ${i + 1} de ${data.plan.installmentsCount}`, marginX, 55);
+        doc.text(`Contrato: ${data.contract.id.slice(0, 8).toUpperCase()}`, pageWidth - marginX, 55, { align: "right" });
 
         // Client section
         let y = 68;
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(...gold);
+        doc.setTextColor(...GOLD);
         doc.text("DATOS DEL CLIENTE", marginX, y);
-        doc.setDrawColor(...gold);
+        doc.setDrawColor(...GOLD);
         doc.setLineWidth(0.3);
         doc.line(marginX, y + 2, pageWidth - marginX, y + 2);
 
         y += 10;
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(...dark);
+        doc.setTextColor(30, 30, 30);
         doc.text("Nombre:", marginX, y);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(...gray);
+        doc.setTextColor(...GRAY);
         doc.text(data.owner.name, marginX + 30, y);
 
         y += 7;
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(...dark);
+        doc.setTextColor(30, 30, 30);
         doc.text("Plan:", marginX, y);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(...gray);
+        doc.setTextColor(...GRAY);
         doc.text(data.plan.name, marginX + 30, y);
 
         if (data.owner.phone) {
             y += 7;
             doc.setFont("helvetica", "bold");
-            doc.setTextColor(...dark);
+            doc.setTextColor(30, 30, 30);
             doc.text("Teléfono:", marginX, y);
             doc.setFont("helvetica", "normal");
-            doc.setTextColor(...gray);
+            doc.setTextColor(...GRAY);
             doc.text(data.owner.phone, marginX + 30, y);
         }
 
@@ -99,9 +125,9 @@ export const generateInstallmentReceiptsPDF = async (data: InstallmentReceiptsDa
         y += 18;
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(...gold);
+        doc.setTextColor(...GOLD);
         doc.text("DETALLE DEL PAGO", marginX, y);
-        doc.setDrawColor(...gold);
+        doc.setDrawColor(...GOLD);
         doc.setLineWidth(0.3);
         doc.line(marginX, y + 2, pageWidth - marginX, y + 2);
 
@@ -112,7 +138,7 @@ export const generateInstallmentReceiptsPDF = async (data: InstallmentReceiptsDa
 
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(...dark);
+        doc.setTextColor(30, 30, 30);
         doc.text("Monto a Pagar:", marginX + 5, y + 6);
 
         doc.setFontSize(16);
@@ -125,10 +151,10 @@ export const generateInstallmentReceiptsPDF = async (data: InstallmentReceiptsDa
         y += 32;
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(...dark);
+        doc.setTextColor(30, 30, 30);
         doc.text("Fecha de Vencimiento:", marginX, y);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(...gray);
+        doc.setTextColor(...GRAY);
         doc.text(
             dueDate.toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" }),
             marginX + 58, y
@@ -136,39 +162,39 @@ export const generateInstallmentReceiptsPDF = async (data: InstallmentReceiptsDa
 
         y += 7;
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(...dark);
+        doc.setTextColor(30, 30, 30);
         doc.text("Fecha de Pago:", marginX, y);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(...gray);
+        doc.setTextColor(...GRAY);
         doc.text("___________________________", marginX + 40, y);
 
         // Signature lines
         const yFirma = 210;
-        doc.setDrawColor(...dark);
+        doc.setDrawColor(30, 30, 30);
         doc.setLineWidth(0.3);
 
         doc.line(marginX, yFirma, marginX + 70, yFirma);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
-        doc.setTextColor(...dark);
+        doc.setTextColor(30, 30, 30);
         doc.text("FIRMA DEL CLIENTE", marginX + 5, yFirma + 5);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8);
-        doc.setTextColor(...gray);
+        doc.setTextColor(...GRAY);
         doc.text(data.owner.name, marginX + 5, yFirma + 10);
 
         doc.line(pageWidth - marginX - 70, yFirma, pageWidth - marginX, yFirma);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(9);
-        doc.setTextColor(...dark);
+        doc.setTextColor(30, 30, 30);
         doc.text("SELLO / RECIBIDO", pageWidth - marginX - 60, yFirma + 5);
 
         // Footer
-        doc.setDrawColor(...gold);
+        doc.setDrawColor(...GOLD);
         doc.setLineWidth(0.3);
         doc.line(marginX, 258, pageWidth - marginX, 258);
         doc.setFontSize(7);
-        doc.setTextColor(...gray);
+        doc.setTextColor(...GRAY);
         doc.text(
             `${data.system.legalName || "Aura Mascotas"} · Tel: ${data.system.contactPhone || ""} · Contrato: ${data.contract.id.slice(0, 8).toUpperCase()}`,
             pageWidth / 2, 263, { align: "center" }
@@ -211,47 +237,23 @@ interface ContractData {
 }
 
 export const generatePrevisionContractPDF = async (data: ContractData) => {
-    // Import jsPDF dynamically to avoid SSR issues
     const { jsPDF } = await import("jspdf");
-
-    // Inicializar jspdf en formato Carta (Letter)
-    const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "letter" // 215.9 x 279.4 mm
-    });
-
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
     const pageWidth = doc.internal.pageSize.getWidth();
     const marginX = 20;
 
-    // Logo Text/Brand
-    doc.setFontSize(22);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(212, 175, 55); // Brand Gold
-    doc.text("AURA", marginX, 25);
+    await applyAuraClientHeader(doc, "Contrato de Previsión Funeraria");
 
-    doc.setFontSize(10);
+    // Folio y Fecha info
+    doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(100, 100, 100);
-    doc.text("FOREVER FRIENDS", marginX, 30);
+    doc.setTextColor(...GRAY);
+    doc.text(`ID de Contrato: ${data.contract.id}`, marginX, 55);
+    doc.text(`Fecha: ${new Date(data.contract.startDate).toLocaleDateString()}`, pageWidth - marginX, 55, { align: "right" });
 
-    // Titulo del contrato
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(0, 0, 0);
-    doc.text("CONTRATO DE SERVICIOS PREVISORIOS FUNERARIOS PARA MASCOTAS", pageWidth / 2, 45, { align: "center" });
-
-    // Folio y Fecha
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`ID de Contrato: ${data.contract.id}`, marginX, 60);
-    doc.text(`Fecha: ${new Date(data.contract.startDate).toLocaleDateString()}`, pageWidth - marginX - 40, 60);
-
-    // Si hay una plantilla dinámica seleccionada, usar su contenido en lugar del estático
+    // Si hay una plantilla dinámica seleccionada
     if (data.template?.content) {
         let dynamicContent = data.template.content;
-
-        // Reemplazar variables mágicas
         dynamicContent = dynamicContent.replace(/{{CLIENTE_NOMBRE}}/g, data.owner.name);
         dynamicContent = dynamicContent.replace(/{{CLIENTE_DIRECCION}}/g, data.owner.address || "No especificada");
         dynamicContent = dynamicContent.replace(/{{PLAN_NOMBRE}}/g, data.plan.name);
@@ -260,22 +262,23 @@ export const generatePrevisionContractPDF = async (data: ContractData) => {
         dynamicContent = dynamicContent.replace(/{{EMPRESA_NOMBRE}}/g, data.system.legalName || "Aura Mascotas");
         dynamicContent = dynamicContent.replace(/{{REPRESENTANTE}}/g, data.system.legalRepresentative || "Representante de Ventas");
 
-        // Quitar etiquetas HTML básicas para modo texto (simplificado)
         const plainText = dynamicContent.replace(/<[^>]*>?/gm, '');
-
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
+        doc.setTextColor(30, 30, 30);
         const splitDynamicText = doc.splitTextToSize(plainText, pageWidth - (marginX * 2));
-        doc.text(splitDynamicText, marginX, 75);
+        doc.text(splitDynamicText, marginX, 70);
 
     } else {
-        // Fallback al contrato estático si no hay plantilla (Legacy)
+        // Fallback al contrato estático
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
-        doc.text("DECLARACIONES", marginX, 75);
+        doc.setTextColor(...GOLD);
+        doc.text("DECLARACIONES", marginX, 70);
 
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
+        doc.setTextColor(30, 30, 30);
         const declaracionesText = `
 De una parte, la empresa denominada ${data.system.legalName || "Aura Mascotas"}, representada en este acto por ${data.system.legalRepresentative || "su representante legal"}, a quien en lo sucesivo se le denominará "EL PRESTADOR".
 
@@ -283,18 +286,19 @@ Y de otra parte, el/la C. ${data.owner.name}, con domicilio en ${data.owner.addr
 
 Ambas partes acuerdan sujetarse a las siguientes cláusulas relacionadas con el plan de previsión funeraria para mascotas denominado "${data.plan.name}".
         `.trim();
-
         const splitDeclaraciones = doc.splitTextToSize(declaracionesText, pageWidth - (marginX * 2));
-        doc.text(splitDeclaraciones, marginX, 85);
+        doc.text(splitDeclaraciones, marginX, 80);
 
         // Conceptos Economicos
-        const yEcon = 130;
+        const yEcon = 125;
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
+        doc.setTextColor(...GOLD);
         doc.text("RESUMEN ECONÓMICO DEL PRESTADOR", marginX, yEcon);
 
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
+        doc.setTextColor(30, 30, 30);
         doc.text(`Costo Total del Plan:`, marginX + 10, yEcon + 10);
         doc.text(`$${data.plan.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN`, marginX + 70, yEcon + 10);
 
@@ -310,7 +314,7 @@ Ambas partes acuerdan sujetarse a las siguientes cláusulas relacionadas con el 
         doc.text(`${data.plan.installmentsCount} cuotas de $${data.contract.installmentAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN`, marginX + 70, yEcon + 34);
 
         // Cláusulas Generales
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         const clausulasText = `
 1. EL PRESTADOR se compromete a brindar los servicios integrados en el plan de previsión sin importar el tiempo transcurrido, sujeto al cumplimiento total del pago por parte del CONTRATANTE.
@@ -318,20 +322,18 @@ Ambas partes acuerdan sujetarse a las siguientes cláusulas relacionadas con el 
 3. Este contrato puede ser reasignado a cualquier mascota propiedad del CONTRATANTE al momento de necesitar el servicio.
         `.trim();
         const splitClausulas = doc.splitTextToSize(clausulasText, pageWidth - (marginX * 2));
-        doc.text(splitClausulas, marginX, yEcon + 50);
+        doc.text(splitClausulas, marginX, yEcon + 45);
     }
 
-    // Firmas (Siempre se muestran al final)
+    // Firmas
     const yFirmas = 230;
-
-    // Linea Firma Cliente
+    doc.setDrawColor(30, 30, 30);
     doc.line(marginX, yFirmas, marginX + 70, yFirmas);
     doc.setFont("helvetica", "bold");
     doc.text("EL CONTRATANTE", marginX + 15, yFirmas + 5);
     doc.setFont("helvetica", "normal");
     doc.text(data.owner.name, marginX + 15, yFirmas + 10);
 
-    // Linea Firma Representante
     doc.line(pageWidth - marginX - 70, yFirmas, pageWidth - marginX, yFirmas);
     doc.setFont("helvetica", "bold");
     doc.text("EL PRESTADOR", pageWidth - marginX - 55, yFirmas + 5);
@@ -340,24 +342,15 @@ Ambas partes acuerdan sujetarse a las siguientes cláusulas relacionadas con el 
 
     // Footer
     doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
+    doc.setTextColor(...GRAY);
     doc.text(`Generado por Aura Systems - Tel: ${data.system.contactPhone || ""}`, pageWidth / 2, 270, { align: "center" });
 
-    // Descargar Archivo
     const fileName = data.template?.name ? `${data.template.name.replace(/\s+/g, '_')}_${data.contract.id}.pdf` : `Contrato_Prevision_${data.contract.id}.pdf`;
     doc.save(fileName);
 };
 
 // ─── Reporte Genérico (con logo y tabla) ─────────────────────────────────────
 
-/**
- * Genera un PDF de reporte con encabezado AURA, logo de la empresa, título y tabla de datos.
- * @param title  Título del reporte (ej. "Reporte de Servicios")
- * @param columns  Array de { key, label, width? } para las columnas de la tabla
- * @param rows  Array de objetos con los datos
- * @param filename  Nombre del archivo PDF a descargar
- * @param empresa  Nombre de la empresa (obtenido de SystemConfig)
- */
 export const generateReportPDF = async (
     title: string,
     columns: { key: string; label: string; width?: number }[],
@@ -366,64 +359,22 @@ export const generateReportPDF = async (
     empresa: string = "Aura Forever Friends"
 ): Promise<void> => {
     const { jsPDF } = await import("jspdf");
-
     const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "letter" });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const marginX = 18;
-    const gold: [number, number, number] = [212, 175, 55];
-    const dark: [number, number, number] = [20, 20, 20];
-    const lightGray: [number, number, number] = [245, 245, 245];
-    const textGray: [number, number, number] = [100, 100, 100];
 
-    // ── Logo / Header ────────────────────────────────────────────────────────
-    try {
-        const logoRes = await fetch("/logo.png");
-        if (logoRes.ok) {
-            const blob = await logoRes.blob();
-            const reader = new FileReader();
-            const logoData = await new Promise<string>((resolve) => {
-                reader.onload = () => resolve(reader.result as string);
-                reader.readAsDataURL(blob);
-            });
-            doc.addImage(logoData, "PNG", marginX, 8, 16, 16);
-        }
-    } catch { }
+    await applyAuraClientHeader(doc, title);
 
-    // Brand name
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...gold);
-    doc.text("AURA", marginX + 20, 15);
-
-    doc.setFontSize(7);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...textGray);
-    doc.text("FOREVER FRIENDS  ·  " + empresa.toUpperCase(), marginX + 20, 19);
-
-    // Date
-    const dateStr = new Date().toLocaleDateString("es-MX", { dateStyle: "long" });
-    doc.setFontSize(7);
-    doc.text(dateStr, pageWidth - marginX, 15, { align: "right" });
-
-    // Gold separator line
-    doc.setDrawColor(...gold);
-    doc.setLineWidth(0.5);
-    doc.line(marginX, 27, pageWidth - marginX, 27);
-
-    // Title
-    doc.setFontSize(13);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...dark);
-    doc.text(title, marginX, 35);
-
+    // Subheader: records count
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
-    doc.setTextColor(...textGray);
-    doc.text(`${rows.length} registros`, marginX, 40);
+    doc.setTextColor(...GRAY);
+    doc.text(`${rows.length} registros`, marginX, 55);
+    doc.text(`Emisión: ${new Date().toLocaleDateString("es-MX", { dateStyle: "long" })}`, pageWidth - marginX, 55, { align: "right" });
 
     // ── Table ────────────────────────────────────────────────────────────────
-    const tableTop = 46;
+    const tableTop = 60;
     const rowHeight = 7;
     const colWidths = columns.map(c => c.width ?? (pageWidth - marginX * 2) / columns.length);
     let currentX = marginX;
@@ -435,7 +386,7 @@ export const generateReportPDF = async (
     // Header labels
     doc.setFontSize(7);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...gold);
+    doc.setTextColor(...GOLD);
     columns.forEach((col, i) => {
         doc.text(col.label.toUpperCase(), currentX + 2, tableTop + 4.5);
         currentX += colWidths[i];
@@ -447,12 +398,11 @@ export const generateReportPDF = async (
         if (y + rowHeight > pageHeight - 15) {
             doc.addPage();
             y = 20;
-            // Repeat header on new page
-            doc.setFillColor(...dark);
+            doc.setFillColor(30, 30, 30);
             doc.rect(marginX, y, pageWidth - marginX * 2, rowHeight, "F");
             doc.setFontSize(7);
             doc.setFont("helvetica", "bold");
-            doc.setTextColor(...gold);
+            doc.setTextColor(...GOLD);
             let hx = marginX;
             columns.forEach((col, i) => {
                 doc.text(col.label.toUpperCase(), hx + 2, y + 4.5);
@@ -462,21 +412,22 @@ export const generateReportPDF = async (
         }
 
         if (rowIdx % 2 === 0) {
-            doc.setFillColor(...lightGray);
+            doc.setFillColor(...LIGHT_GRAY);
             doc.rect(marginX, y, pageWidth - marginX * 2, rowHeight, "F");
         }
 
         doc.setFontSize(7);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(50, 50, 50);
+        doc.setTextColor(30, 30, 30);
 
         let cx = marginX;
         columns.forEach((col, i) => {
             const cellVal = String(row[col.key] ?? "");
             const maxWidth = colWidths[i] - 4;
-            const truncated = doc.getTextWidth(cellVal) > maxWidth
-                ? cellVal.substring(0, Math.floor(maxWidth / (doc.getTextWidth(cellVal) / cellVal.length))) + "…"
-                : cellVal;
+            let truncated = cellVal;
+            if (doc.getTextWidth(cellVal) > maxWidth) {
+                truncated = cellVal.substring(0, 15) + "...";
+            }
             doc.text(truncated, cx + 2, y + 4.5);
             cx += colWidths[i];
         });
@@ -484,14 +435,13 @@ export const generateReportPDF = async (
         y += rowHeight;
     });
 
-    // Bottom gold line + footer
-    doc.setDrawColor(...gold);
+    // Footer
+    doc.setDrawColor(...GOLD);
     doc.setLineWidth(0.3);
     doc.line(marginX, pageHeight - 12, pageWidth - marginX, pageHeight - 12);
     doc.setFontSize(6);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...textGray);
-    doc.text(`${empresa}  ·  Generado ${dateStr}`, pageWidth / 2, pageHeight - 7, { align: "center" });
+    doc.setTextColor(...GRAY);
+    doc.text(`${empresa}  ·  Generado con Aura Systems`, pageWidth / 2, pageHeight - 7, { align: "center" });
 
     doc.save(filename);
 };
