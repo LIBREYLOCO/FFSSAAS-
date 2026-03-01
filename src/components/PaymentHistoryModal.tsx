@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, DollarSign, Loader2, Calendar, CheckCircle2, History } from "lucide-react";
+import { X, DollarSign, Loader2, Calendar, History } from "lucide-react";
 import { formatMXN } from "@/lib/format";
 
 interface Props {
@@ -23,6 +23,9 @@ export default function PaymentHistoryModal({ isOpen, onClose, contract, onSucce
             setNewPaymentAmount(contract.installmentAmount);
         }
     }, [isOpen, contract]);
+
+    const totalPaid = payments.reduce((acc, p) => acc + Number(p.amount), 0);
+    const remainingBalance = Math.max(0, Number(contract?.plan?.price ?? 0) - totalPaid);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -108,17 +111,27 @@ export default function PaymentHistoryModal({ isOpen, onClose, contract, onSucce
                                 </h3>
                                 <form onSubmit={handleSubmit} className="space-y-4">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Monto de Mensualidad</label>
+                                        <div className="flex justify-between items-center ml-1 mb-1">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Monto a Abonar</label>
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
+                                                Saldo restante: {formatMXN(remainingBalance)}
+                                            </span>
+                                        </div>
                                         <div className="relative">
                                             <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={16} />
                                             <input
                                                 type="number"
                                                 step="0.01"
+                                                min="0.01"
+                                                max={remainingBalance}
                                                 value={newPaymentAmount}
-                                                onChange={e => setNewPaymentAmount(Number(e.target.value))}
+                                                onChange={e => setNewPaymentAmount(Math.min(Number(e.target.value), remainingBalance))}
                                                 className="aura-input w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-sm font-bold"
                                             />
                                         </div>
+                                        {newPaymentAmount > remainingBalance && (
+                                            <p className="text-[10px] text-rose-400 font-bold ml-1">El monto no puede superar el saldo restante.</p>
+                                        )}
                                     </div>
 
                                     <div className="p-4 rounded-xl bg-brand-gold-500/10 border border-brand-gold-500/20">
@@ -128,11 +141,11 @@ export default function PaymentHistoryModal({ isOpen, onClose, contract, onSucce
                                     </div>
 
                                     <button
-                                        disabled={loading}
+                                        disabled={loading || remainingBalance <= 0 || newPaymentAmount <= 0 || newPaymentAmount > remainingBalance}
                                         type="submit"
-                                        className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-2 group mt-2 font-bold"
+                                        className="btn-primary w-full py-4 rounded-2xl flex items-center justify-center gap-2 group mt-2 font-bold disabled:opacity-50"
                                     >
-                                        {loading ? <Loader2 className="animate-spin" size={20} /> : "Registrar Pago"}
+                                        {loading ? <Loader2 className="animate-spin" size={20} /> : remainingBalance <= 0 ? "Contrato Liquidado" : "Registrar Pago"}
                                     </button>
                                 </form>
                             </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Dog, User, Calendar, Loader2, Search, Upload } from "lucide-react";
+import { X, Dog, User, Calendar, Loader2, Search, Upload, UserPlus } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 
 interface Props {
@@ -20,6 +20,9 @@ export default function RegisterPetModal({ isOpen, onClose, onSuccess }: Props) 
     const [owners, setOwners] = useState<any[]>([]);
     const [clinics, setClinics] = useState<any[]>([]);
     const [searchOwner, setSearchOwner] = useState("");
+    const [showCreateOwner, setShowCreateOwner] = useState(false);
+    const [quickOwnerData, setQuickOwnerData] = useState({ name: "", phone: "" });
+    const [creatingOwner, setCreatingOwner] = useState(false);
     const [formData, setFormData] = useState({
         name: "",
         species: "Perro",
@@ -47,6 +50,28 @@ export default function RegisterPetModal({ isOpen, onClose, onSuccess }: Props) 
     const filteredOwners = owners.filter(o =>
         o.name.toLowerCase().includes(searchOwner.toLowerCase())
     );
+
+    const handleQuickCreateOwner = async () => {
+        if (!quickOwnerData.name) return;
+        setCreatingOwner(true);
+        try {
+            const res = await fetch("/api/owners", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: quickOwnerData.name, phone: quickOwnerData.phone || undefined })
+            });
+            if (res.ok) {
+                const newOwner = await res.json();
+                setOwners(prev => [newOwner, ...prev]);
+                setFormData(prev => ({ ...prev, ownerId: newOwner.id }));
+                setSearchOwner(newOwner.name);
+                setShowCreateOwner(false);
+                setQuickOwnerData({ name: "", phone: "" });
+            }
+        } finally {
+            setCreatingOwner(false);
+        }
+    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -158,6 +183,7 @@ export default function RegisterPetModal({ isOpen, onClose, onSuccess }: Props) 
                                                 onClick={() => {
                                                     setFormData({ ...formData, ownerId: owner.id });
                                                     setSearchOwner(owner.name);
+                                                    setShowCreateOwner(false);
                                                 }}
                                                 className={`w-full text-left p-3 rounded-xl border transition-all text-sm flex items-center gap-3 ${formData.ownerId === owner.id
                                                     ? "bg-brand-gold-500/20 border-brand-gold-500/50 text-brand-gold-100"
@@ -170,6 +196,48 @@ export default function RegisterPetModal({ isOpen, onClose, onSuccess }: Props) 
                                                 {owner.name}
                                             </button>
                                         ))}
+
+                                        {searchOwner && filteredOwners.length === 0 && !showCreateOwner && (
+                                            <button
+                                                type="button"
+                                                onClick={() => { setShowCreateOwner(true); setQuickOwnerData({ name: searchOwner, phone: "" }); }}
+                                                className="w-full text-left p-3 rounded-xl border border-dashed border-brand-gold-500/40 hover:border-brand-gold-500/70 bg-brand-gold-500/5 transition-all text-sm flex items-center gap-3 text-brand-gold-400"
+                                            >
+                                                <UserPlus size={14} />
+                                                Crear cliente &quot;{searchOwner}&quot;
+                                            </button>
+                                        )}
+
+                                        {showCreateOwner && (
+                                            <div className="p-4 rounded-xl border border-brand-gold-500/20 bg-brand-gold-500/5 space-y-3">
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-brand-gold-500">Nuevo Cliente</p>
+                                                <input
+                                                    type="text"
+                                                    value={quickOwnerData.name}
+                                                    onChange={e => setQuickOwnerData({ ...quickOwnerData, name: e.target.value })}
+                                                    placeholder="Nombre completo"
+                                                    className="aura-input w-full bg-white/5 border border-white/10 rounded-xl py-2 px-4 text-sm"
+                                                />
+                                                <input
+                                                    type="tel"
+                                                    value={quickOwnerData.phone}
+                                                    onChange={e => setQuickOwnerData({ ...quickOwnerData, phone: e.target.value })}
+                                                    placeholder="Teléfono (opcional)"
+                                                    className="aura-input w-full bg-white/5 border border-white/10 rounded-xl py-2 px-4 text-sm"
+                                                />
+                                                <div className="flex gap-2">
+                                                    <button type="button" onClick={() => setShowCreateOwner(false)}
+                                                        className="flex-1 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                                        Cancelar
+                                                    </button>
+                                                    <button type="button" onClick={handleQuickCreateOwner}
+                                                        disabled={!quickOwnerData.name || creatingOwner}
+                                                        className="flex-1 py-2 rounded-xl bg-brand-gold-500 text-black text-[10px] font-black uppercase tracking-widest disabled:opacity-50">
+                                                        {creatingOwner ? "Creando..." : "Crear y Seleccionar"}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

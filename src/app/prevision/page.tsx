@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import RegisterContractModal from "@/components/RegisterContractModal";
 import PaymentHistoryModal from "@/components/PaymentHistoryModal";
 import ManagePlansModal from "@/components/ManagePlansModal";
-import { generatePrevisionContractPDF } from "@/lib/pdfGenerator";
+import { generatePrevisionContractPDF, generateInstallmentReceiptsPDF } from "@/lib/pdfGenerator";
 import { formatMXN } from "@/lib/format";
 
 export default function PrevisionPage() {
@@ -36,6 +36,19 @@ export default function PrevisionPage() {
     useEffect(() => {
         fetchContracts();
     }, []);
+
+    const handlePrintReceipts = async (contract: any) => {
+        try {
+            const sysRes = await fetch("/api/system-config");
+            const systemConfig = sysRes.ok ? await sysRes.json() : {};
+            await generateInstallmentReceiptsPDF({
+                owner: { name: contract.owner.name, phone: contract.owner.phone },
+                plan: { name: contract.plan.name, price: Number(contract.plan.price), installmentsCount: contract.plan.installmentsCount },
+                contract: { id: contract.id, startDate: contract.startDate || new Date().toISOString(), downPayment: Number(contract.downPayment), installmentAmount: Number(contract.installmentAmount) },
+                system: { legalName: systemConfig?.legalName || "", contactPhone: systemConfig?.contactPhone || "" }
+            });
+        } catch (error) { console.error("Error generating receipts", error); }
+    };
 
     const handleDownloadPDF = async (contract: any) => {
         try {
@@ -189,6 +202,12 @@ export default function PrevisionPage() {
                                             className="text-xs font-bold text-brand-gold-500 hover:underline flex items-center gap-1 bg-white/5 px-3 py-2 rounded-lg"
                                         >
                                             Descargar Contrato PDF
+                                        </button>
+                                        <button
+                                            onClick={() => handlePrintReceipts(contract)}
+                                            className="text-xs font-bold text-emerald-400 hover:underline flex items-center gap-1 bg-white/5 px-3 py-2 rounded-lg"
+                                        >
+                                            Imprimir Recibos ({contract.plan.installmentsCount})
                                         </button>
                                         <button
                                             onClick={() => {

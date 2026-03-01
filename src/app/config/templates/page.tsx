@@ -29,6 +29,15 @@ export default function TemplatesPage() {
         { key: "{{REPRESENTANTE}}", desc: "Representante legal" }
     ];
 
+    const handleSeedDefaults = async () => {
+        try {
+            const res = await fetch("/api/templates/seed-defaults", { method: "POST" });
+            const data = await res.json();
+            if (res.ok) { alert(data.message); loadTemplates(); }
+            else alert("Error al cargar plantillas base");
+        } catch { alert("Error de conexión"); }
+    };
+
     const loadTemplates = async () => {
         setLoading(true);
         try {
@@ -122,13 +131,22 @@ export default function TemplatesPage() {
                         Crea documentos dinámicos y formatos legales con auto-llenado.
                     </p>
                 </div>
-                <button
-                    onClick={() => handleOpenEdit()}
-                    className="btn-primary flex items-center gap-2"
-                >
-                    <Plus size={20} />
-                    Nueva Plantilla
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleSeedDefaults}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-sm font-bold text-slate-300 transition-all"
+                    >
+                        <Settings size={16} className="text-brand-gold-500" />
+                        Cargar Plantillas Base
+                    </button>
+                    <button
+                        onClick={() => handleOpenEdit()}
+                        className="btn-primary flex items-center gap-2"
+                    >
+                        <Plus size={20} />
+                        Nueva Plantilla
+                    </button>
+                </div>
             </header>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

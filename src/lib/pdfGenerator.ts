@@ -174,6 +174,182 @@ export const generateCremationCertificate = async (data: CertificateData): Promi
     return doc.output("arraybuffer");
 };
 
+// ─── Recibos de Mensualidades ─────────────────────────────────────────────────
+
+interface InstallmentReceiptsData {
+    owner: { name: string; phone?: string | null };
+    plan: { name: string; price: number; installmentsCount: number };
+    contract: { id: string; startDate: string; downPayment: number; installmentAmount: number };
+    system: { legalName: string; contactPhone?: string | null };
+}
+
+export const generateInstallmentReceiptsPDF = async (data: InstallmentReceiptsData) => {
+    const { jsPDF } = await import("jspdf");
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const marginX = 20;
+    const gold: [number, number, number] = [212, 175, 55];
+    const dark: [number, number, number] = [30, 30, 30];
+    const gray: [number, number, number] = [100, 100, 100];
+    const green: [number, number, number] = [34, 120, 60];
+
+    const startDate = new Date(data.contract.startDate);
+
+    for (let i = 0; i < data.plan.installmentsCount; i++) {
+        if (i > 0) doc.addPage();
+
+        const dueDate = new Date(startDate);
+        dueDate.setMonth(dueDate.getMonth() + i + 1);
+
+        // Header
+        doc.setFontSize(20);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...gold);
+        doc.text("AURA", marginX, 22);
+
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...gray);
+        doc.text("FOREVER FRIENDS  ·  " + (data.system.legalName || ""), marginX, 27);
+
+        doc.setDrawColor(...gold);
+        doc.setLineWidth(0.5);
+        doc.line(marginX, 31, pageWidth - marginX, 31);
+
+        // Title
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...dark);
+        doc.text("RECIBO DE MENSUALIDAD", pageWidth / 2, 42, { align: "center" });
+
+        // Receipt number + contract ref
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...gray);
+        doc.text(`Recibo ${i + 1} de ${data.plan.installmentsCount}`, marginX, 52);
+        doc.text(`Contrato: ${data.contract.id.slice(0, 8).toUpperCase()}`, pageWidth - marginX, 52, { align: "right" });
+
+        // Client section
+        let y = 68;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...gold);
+        doc.text("DATOS DEL CLIENTE", marginX, y);
+        doc.setDrawColor(...gold);
+        doc.setLineWidth(0.3);
+        doc.line(marginX, y + 2, pageWidth - marginX, y + 2);
+
+        y += 10;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...dark);
+        doc.text("Nombre:", marginX, y);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...gray);
+        doc.text(data.owner.name, marginX + 30, y);
+
+        y += 7;
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...dark);
+        doc.text("Plan:", marginX, y);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...gray);
+        doc.text(data.plan.name, marginX + 30, y);
+
+        if (data.owner.phone) {
+            y += 7;
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(...dark);
+            doc.text("Teléfono:", marginX, y);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(...gray);
+            doc.text(data.owner.phone, marginX + 30, y);
+        }
+
+        // Payment detail section
+        y += 18;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...gold);
+        doc.text("DETALLE DEL PAGO", marginX, y);
+        doc.setDrawColor(...gold);
+        doc.setLineWidth(0.3);
+        doc.line(marginX, y + 2, pageWidth - marginX, y + 2);
+
+        y += 12;
+        // Amount box
+        doc.setFillColor(240, 248, 240);
+        doc.roundedRect(marginX, y - 4, pageWidth - marginX * 2, 24, 3, 3, "F");
+
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...dark);
+        doc.text("Monto a Pagar:", marginX + 5, y + 6);
+
+        doc.setFontSize(16);
+        doc.setTextColor(...green);
+        doc.text(
+            `$${Number(data.contract.installmentAmount).toLocaleString("en-US", { minimumFractionDigits: 2 })} MXN`,
+            pageWidth - marginX - 5, y + 8, { align: "right" }
+        );
+
+        y += 32;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...dark);
+        doc.text("Fecha de Vencimiento:", marginX, y);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...gray);
+        doc.text(
+            dueDate.toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" }),
+            marginX + 58, y
+        );
+
+        y += 7;
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...dark);
+        doc.text("Fecha de Pago:", marginX, y);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...gray);
+        doc.text("___________________________", marginX + 40, y);
+
+        // Signature lines
+        const yFirma = 210;
+        doc.setDrawColor(...dark);
+        doc.setLineWidth(0.3);
+
+        doc.line(marginX, yFirma, marginX + 70, yFirma);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(...dark);
+        doc.text("FIRMA DEL CLIENTE", marginX + 5, yFirma + 5);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(...gray);
+        doc.text(data.owner.name, marginX + 5, yFirma + 10);
+
+        doc.line(pageWidth - marginX - 70, yFirma, pageWidth - marginX, yFirma);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
+        doc.setTextColor(...dark);
+        doc.text("SELLO / RECIBIDO", pageWidth - marginX - 60, yFirma + 5);
+
+        // Footer
+        doc.setDrawColor(...gold);
+        doc.setLineWidth(0.3);
+        doc.line(marginX, 258, pageWidth - marginX, 258);
+        doc.setFontSize(7);
+        doc.setTextColor(...gray);
+        doc.text(
+            `${data.system.legalName || "Aura Mascotas"} · Tel: ${data.system.contactPhone || ""} · Contrato: ${data.contract.id.slice(0, 8).toUpperCase()}`,
+            pageWidth / 2, 263, { align: "center" }
+        );
+    }
+
+    const safeOwnerName = data.owner.name.replace(/\s+/g, "_");
+    doc.save(`Recibos_${safeOwnerName}_${data.plan.installmentsCount}cuotas.pdf`);
+};
+
 // ─── Contrato de Previsión ────────────────────────────────────────────────────
 
 interface ContractData {

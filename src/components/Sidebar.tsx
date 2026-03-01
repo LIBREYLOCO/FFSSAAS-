@@ -15,6 +15,7 @@ import {
     Wrench,
     Building2,
     BarChart2,
+    Banknote,
 } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,6 +41,7 @@ const navItems = [
     { name: "Clientes", href: "/clientes", icon: Users, roles: ["ADMIN", "GERENTE_SUCURSAL", "VENDEDOR"] },
     { name: "Mascotas", href: "/mascotas", icon: Dog, roles: ["ADMIN", "GERENTE_SUCURSAL", "VENDEDOR", "OPERADOR"] },
     { name: "Previsión", href: "/prevision", icon: HeartHandshake, roles: ["ADMIN", "GERENTE_SUCURSAL", "VENDEDOR"] },
+    { name: "Cobranza", href: "/cobranza", icon: Banknote, roles: ["ADMIN", "GERENTE_SUCURSAL"] },
     { name: "Vendedores", href: "/vendedores", icon: TrendingUp, roles: ["ADMIN", "GERENTE_SUCURSAL"] },
     { name: "Operación", href: "/operacion", icon: Wrench, roles: ["ADMIN", "GERENTE_SUCURSAL", "OPERADOR", "DRIVER"] },
     { name: "Veterinarias", href: "/veterinarias", icon: MapPin, roles: ["ADMIN", "GERENTE_SUCURSAL"] },
