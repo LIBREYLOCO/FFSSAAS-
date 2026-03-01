@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { generateCremationCertificate } from "@/lib/pdfGenerator";
+import { generateCremationCertificate } from "@/lib/pdfGenerator.server";
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
