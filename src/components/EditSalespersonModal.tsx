@@ -56,8 +56,8 @@ export default function EditSalespersonModal({ isOpen, onClose, onSuccess, perso
             setFormData({
                 name: person.name ?? "",
                 level: person.level ?? "JUNIOR",
-                commissionRate: String(Number(person.commissionRate).toFixed(1)),
-                previsionCommissionRate: String(Number(person.previsionCommissionRate).toFixed(1)),
+                commissionRate: String(Number(person.commissionRate).toFixed(2)),
+                previsionCommissionRate: String(Number(person.previsionCommissionRate).toFixed(2)),
                 phone: person.phone ?? "",
                 email: person.email ?? "",
                 photoUrl: person.photoUrl ?? "",

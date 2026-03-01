@@ -561,7 +561,7 @@ export default function ReportesPage() {
                       <div>
                         <p className="font-black text-white">{v.name}</p>
                         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
-                          {v.level} · {(v.commissionRate * 100).toFixed(0)}% comisión
+                          {v.level} · {Number(v.commissionRate).toFixed(2)}% comisión
                           {v.sucursal && <span className="ml-2 text-purple-400">· {v.sucursal.nombre}</span>}
                         </p>
                       </div>

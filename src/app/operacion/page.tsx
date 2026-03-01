@@ -8,7 +8,7 @@ import {
   Plus, Pencil, ToggleLeft, ToggleRight, Users, Car,
   Wrench, Search, Camera, Image as ImageIcon,
 } from "lucide-react";
-import { generatePickupReceipt } from "@/lib/pdf-generator";
+import { generatePickupReceipt, generateAshDeliveryReceipt } from "@/lib/pdf-generator";
 import Link from "next/link";
 
 
@@ -591,12 +591,20 @@ export default function OperacionPage() {
                           </div>
 
                           {order.status === "DELIVERED" || order.status === "READY_FOR_DELIVERY" ? (
-                            <button
-                              onClick={() => setPhotoModal({ order, type: "deliveryPhoto" })}
-                              className={`w-full py-2 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase border transition-all mt-1 ${order.deliveryPhoto ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-brand-gold-500/10 border-brand-gold-500/20 text-brand-gold-400 hover:bg-brand-gold-500/20"}`}
-                            >
-                              <ImageIcon size={12} /> {order.deliveryPhoto ? "Evidencia Entrega OK" : "Subir Foto Entrega"}
-                            </button>
+                            <>
+                              <button
+                                onClick={() => setPhotoModal({ order, type: "deliveryPhoto" })}
+                                className={`w-full py-2 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase border transition-all mt-1 ${order.deliveryPhoto ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-brand-gold-500/10 border-brand-gold-500/20 text-brand-gold-400 hover:bg-brand-gold-500/20"}`}
+                              >
+                                <ImageIcon size={12} /> {order.deliveryPhoto ? "Evidencia Entrega OK" : "Subir Foto Entrega"}
+                              </button>
+                              <button
+                                onClick={() => generateAshDeliveryReceipt(order)}
+                                className="w-full py-2 rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20 transition-all"
+                              >
+                                <Package size={12} /> Acta de Entrega de Cenizas
+                              </button>
+                            </>
                           ) : null}
 
                           <Link

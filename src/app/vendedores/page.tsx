@@ -127,14 +127,14 @@ export default function VendedoresPage() {
                                         <Flame size={10} className="text-orange-400" />
                                         <p className="text-[10px] font-bold text-slate-500 uppercase">Crem. Inmediata</p>
                                     </div>
-                                    <p className="text-lg font-black text-brand-gold-500">{Number(person.commissionRate).toFixed(1)}%</p>
+                                    <p className="text-lg font-black text-brand-gold-500">{Number(person.commissionRate).toFixed(2)}%</p>
                                 </div>
                                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
                                     <div className="flex items-center justify-center gap-1 mb-1">
                                         <FileText size={10} className="text-blue-400" />
                                         <p className="text-[10px] font-bold text-slate-500 uppercase">Previsión</p>
                                     </div>
-                                    <p className="text-lg font-black text-brand-gold-500">{Number(person.previsionCommissionRate).toFixed(1)}%</p>
+                                    <p className="text-lg font-black text-brand-gold-500">{Number(person.previsionCommissionRate).toFixed(2)}%</p>
                                 </div>
                             </div>
 

@@ -1,175 +1,355 @@
 import jsPDF from "jspdf";
 
-// Helper for logo and branding basics
-const applyBranding = (doc: jsPDF, title: string) => {
-    // --- Header Background ---
-    doc.setFillColor(15, 23, 42); // slate-900
-    doc.rect(0, 0, 210, 45, "F");
-
-    // --- Official AURA Logo Image ---
-    const logoBase64 = "iVBORw0KGgoAAAANSUhEUgAABGUAAARlCAIAAACfiO0JAAAACXBIWXMAACE4AAAhOAFFljFgAAAF/2lUWHRYTUw6Y29tLmFkb2Jl...Kn9iYw0k5JUcjTJLpugUJznxMYpH1FvVLYIF8isRaeyJmUEOC0MGYVnkh0ZiBMHuCdLRZz/C7VccEl8VJPlAAAAAElFTkSuQmCC";
+// ─── Helper: carga el logo desde /logo.png (client-side) ────────────────────
+const fetchLogoDataUrl = async (): Promise<string | null> => {
     try {
-        // Center-aligned logo image (approximate centering by x-offset)
-        doc.addImage("data:image/png;base64," + logoBase64, "PNG", 85, 3, 40, 30);
-    } catch (e) {
-        console.error("Error adding logo to PDF:", e);
-        // Fallback Text if image fails
-        doc.setTextColor(212, 175, 55);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(24);
-        doc.text("AURA", 105, 18, { align: "center" });
+        const res = await fetch("/logo.png");
+        if (!res.ok) return null;
+        const blob = await res.blob();
+        return await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+        });
+    } catch {
+        return null;
     }
-
-    // --- Document Title ---
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bolditalic");
-    doc.text(title, 105, 38, { align: "center" });
-
-    // --- Accent Line ---
-    doc.setDrawColor(212, 175, 55);
-    doc.setLineWidth(0.5);
-    doc.line(20, 45, 190, 45);
 };
 
-export const generateServiceCertificate = (order: any) => {
-    const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-    });
+// ─── Helper: aplica encabezado AURA con logo ─────────────────────────────────
+const applyBranding = (doc: jsPDF, title: string, logoDataUrl: string | null) => {
+    const pageW = doc.internal.pageSize.getWidth();
 
-    applyBranding(doc, "CERTIFICADO DE HOMENAJE");
+    // Fondo oscuro
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, pageW, 46, "F");
 
-    // --- Body ---
+    // Logo centrado
+    if (logoDataUrl) {
+        try {
+            doc.addImage(logoDataUrl, "PNG", pageW / 2 - 20, 3, 40, 30);
+        } catch {
+            doc.setTextColor(212, 175, 55);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(22);
+            doc.text("AURA", pageW / 2, 22, { align: "center" });
+        }
+    } else {
+        doc.setTextColor(212, 175, 55);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.text("AURA", pageW / 2, 22, { align: "center" });
+    }
+
+    // Título del documento en blanco
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(15);
+    doc.setFont("helvetica", "bolditalic");
+    doc.text(title, pageW / 2, 40, { align: "center" });
+
+    // Línea dorada separadora
+    doc.setDrawColor(212, 175, 55);
+    doc.setLineWidth(0.5);
+    doc.line(20, 46, pageW - 20, 46);
+};
+
+// ─── Certificado de Homenaje ─────────────────────────────────────────────────
+export const generateServiceCertificate = async (order: any) => {
+    const logo = await fetchLogoDataUrl();
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const gold: [number, number, number] = [212, 175, 55];
+
+    applyBranding(doc, "CERTIFICADO DE HOMENAJE", logo);
+
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
-    doc.text(`Por la presente se certifica que se ha llevado a cabo el ritual de`, 105, 65, { align: "center" });
+    doc.text("Por la presente se certifica que se ha llevado a cabo el ritual de", pageW / 2, 60, { align: "center" });
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
-    doc.text(order.serviceType === 'IMMEDIATE' ? 'CREMACIÓN INDIVIDUAL INMEDIATA' : 'PROCESO DE PREVISIÓN AURA', 105, 75, { align: "center" });
+    doc.text(
+        order.serviceType === "IMMEDIATE" ? "CREMACIÓN INDIVIDUAL INMEDIATA" : "PROCESO DE PREVISIÓN AURA",
+        pageW / 2, 70, { align: "center" }
+    );
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
-    doc.text("para nuestra querida mascota:", 105, 90, { align: "center" });
+    doc.text("para nuestra querida mascota:", pageW / 2, 85, { align: "center" });
 
-    // --- Pet Photo (Evidence) ---
+    // Foto de la mascota (evidencia)
     if (order.petPhoto) {
         try {
-            // Frame for the photo
-            doc.setDrawColor(212, 175, 55);
+            doc.setDrawColor(...gold);
             doc.setLineWidth(0.5);
-            doc.rect(75, 95, 60, 45); // x, y, w, h
-            doc.addImage(order.petPhoto, "JPEG", 76, 96, 58, 43);
-        } catch (e) {
-            console.error("Error adding pet photo to PDF:", e);
-        }
+            doc.rect(75, 90, 60, 45);
+            doc.addImage(order.petPhoto, "JPEG", 76, 91, 58, 43);
+        } catch {}
     }
 
-    const petNameY = order.petPhoto ? 155 : 115;
+    const petNameY = order.petPhoto ? 150 : 110;
 
     doc.setFontSize(24);
     doc.setFont("helvetica", "bolditalic");
-    doc.setTextColor(184, 134, 11); // Dark gold
-    doc.text(order.pet?.name || "Sin nombre", 105, petNameY, { align: "center" });
+    doc.setTextColor(184, 134, 11);
+    doc.text(order.pet?.name || "Sin nombre", pageW / 2, petNameY, { align: "center" });
 
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`${order.pet?.species || ""} • ${order.pet?.breed || "Raza única"}`, 105, petNameY + 10, { align: "center" });
+    doc.text(`${order.pet?.species || ""} • ${order.pet?.breed || "Raza única"}`, pageW / 2, petNameY + 10, { align: "center" });
 
-    // --- Details ---
-    doc.setDrawColor(212, 175, 55);
-    doc.line(40, petNameY + 25, 170, petNameY + 25);
+    doc.setDrawColor(...gold);
+    doc.line(40, petNameY + 22, 170, petNameY + 22);
 
     doc.setFontSize(10);
-    doc.text(`Propietario: ${order.owner?.name || "N/A"}`, 105, petNameY + 35, { align: "center" });
-    doc.text(`Fecha del Servicio: ${new Date(order.createdAt).toLocaleDateString()}`, 105, petNameY + 45, { align: "center" });
-    doc.text(`Folio Interno: ${order.folio}`, 105, petNameY + 55, { align: "center" });
+    doc.text(`Propietario: ${order.owner?.name || "N/A"}`, pageW / 2, petNameY + 32, { align: "center" });
+    doc.text(`Fecha del Servicio: ${new Date(order.createdAt).toLocaleDateString("es-MX")}`, pageW / 2, petNameY + 42, { align: "center" });
+    doc.text(`Folio Interno: ${order.folio}`, pageW / 2, petNameY + 52, { align: "center" });
 
-    // --- Footer / Signature ---
     doc.setFontSize(8);
     doc.setTextColor(100, 100, 100);
-    doc.text("Este documento certifica un proceso manejado con los más altos estándares de ética y respeto.", 105, 275, { align: "center" });
-    doc.text("Airapí • Memorial Partners • Aura Forever Friends", 105, 282, { align: "center" });
+    doc.text("Este documento certifica un proceso manejado con los más altos estándares de ética y respeto.", pageW / 2, 272, { align: "center" });
+    doc.text("Aura Forever Friends • Memorial Partners", pageW / 2, 279, { align: "center" });
 
-    // Save
     doc.save(`Certificado_AURA_${order.folio}.pdf`);
 };
 
-export const generatePickupReceipt = (order: any) => {
-    const doc = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-    });
+// ─── Recibo de Recolección ───────────────────────────────────────────────────
+export const generatePickupReceipt = async (order: any) => {
+    const logo = await fetchLogoDataUrl();
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const gold: [number, number, number] = [212, 175, 55];
 
-    applyBranding(doc, "RECIBO DE RECOLECCIÓN");
+    applyBranding(doc, "RECIBO DE RECOLECCIÓN", logo);
 
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
-    doc.text(`FOLIO: ${order.folio}`, 190, 55, { align: "right" });
-    doc.text(`FECHA: ${new Date().toLocaleDateString()}`, 190, 60, { align: "right" });
+    doc.text(`FOLIO: ${order.folio}`, pageW - 20, 55, { align: "right" });
+    doc.text(`FECHA: ${new Date().toLocaleDateString("es-MX")}`, pageW - 20, 61, { align: "right" });
 
-    // --- Pet Info Section ---
+    // Datos de la mascota
     doc.setFillColor(245, 245, 245);
-    doc.rect(20, 65, 170, 40, "F");
-    doc.setFontSize(12);
-    doc.text("DATOS DE LA MASCOTA", 25, 75);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Nombre: ${order.pet?.name}`, 25, 85);
-    doc.text(`Especie/Raza: ${order.pet?.species} / ${order.pet?.breed || "N/A"}`, 25, 92);
-    doc.text(`Peso aprox: ${order.pet?.weightKg || "N/A"} kg`, 110, 85);
-    doc.text(`Tipo de Servicio: ${order.serviceType === 'IMMEDIATE' ? 'Inmediato' : 'Previsión'}`, 110, 92);
-
-    // --- Owner / Pickup Info ---
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text("DATOS DE RECOLECCIÓN", 25, 115);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Propietario: ${order.owner?.name}`, 25, 125);
-    doc.text(`Teléfono: ${order.owner?.phone || "N/A"}`, 25, 132);
-    doc.text(`Ubicación: ${order.owner?.address || "Domicilio Particular"}`, 25, 139);
-
-    // --- Receipt Confirmation ---
+    doc.rect(20, 67, pageW - 40, 40, "F");
     doc.setFontSize(11);
-    doc.setFont("helvetica", "bolditalic");
-    const confirmationText = "Por medio de la presente, el personal autorizado de AURA confirma la recepción de la mascota arriba mencionada para el inicio del proceso ritual solicitado.";
-    const splitConfirm = doc.splitTextToSize(confirmationText, 160);
-    doc.text(splitConfirm, 25, 160);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 30, 30);
+    doc.text("DATOS DE LA MASCOTA", 25, 77);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Nombre: ${order.pet?.name}`, 25, 87);
+    doc.text(`Especie / Raza: ${order.pet?.species} / ${order.pet?.breed || "N/A"}`, 25, 94);
+    doc.text(`Peso aprox: ${order.pet?.weightKg || "N/A"} kg`, pageW / 2 + 10, 87);
+    doc.text(`Tipo de Servicio: ${order.serviceType === "IMMEDIATE" ? "Inmediato" : "Previsión"}`, pageW / 2 + 10, 94);
 
-    // --- Photo if exists ---
+    // Datos de recolección
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(30, 30, 30);
+    doc.text("DATOS DE RECOLECCIÓN", 25, 118);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Propietario: ${order.owner?.name}`, 25, 128);
+    doc.text(`Teléfono: ${order.owner?.phone || "N/A"}`, 25, 135);
+    doc.text(`Dirección: ${order.owner?.address || "Domicilio Particular"}`, 25, 142);
+
+    // Línea dorada
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(0.4);
+    doc.line(20, 152, pageW - 20, 152);
+
+    // Texto de confirmación
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(30, 30, 30);
+    const confirmText = "Por medio de la presente, el personal autorizado de AURA confirma la recepción de la mascota arriba mencionada para el inicio del proceso ritual solicitado.";
+    const splitConfirm = doc.splitTextToSize(confirmText, pageW - 50);
+    doc.text(splitConfirm, 25, 162);
+
+    // Foto de evidencia
     if (order.petPhoto) {
         doc.setFontSize(8);
         doc.setFont("helvetica", "normal");
-        doc.text("Evidencia fotográfica capturada en sitio:", 25, 180);
-        doc.addImage(order.petPhoto, "JPEG", 25, 185, 50, 35);
+        doc.setTextColor(100, 100, 100);
+        doc.text("Evidencia fotográfica capturada en sitio:", 25, 183);
+        doc.addImage(order.petPhoto, "JPEG", 25, 188, 55, 38);
     }
 
-    // --- Signatures ---
-    const signY = 240;
-    doc.line(25, signY, 85, signY);
-    doc.text("Firma de Conformidad (Familiar)", 55, signY + 5, { align: "center" });
+    // Firmas
+    const signY = 242;
+    doc.setDrawColor(30, 30, 30);
+    doc.setLineWidth(0.3);
+    doc.line(25, signY, 90, signY);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(30, 30, 30);
+    doc.text("Firma de Conformidad (Familiar)", 57, signY + 6, { align: "center" });
 
-    doc.line(125, signY, 185, signY);
-    doc.text("Personal AURA / Conductor", 155, signY + 5, { align: "center" });
+    doc.line(pageW - 90, signY, pageW - 25, signY);
+    doc.text("Personal AURA / Conductor", pageW - 57, signY + 6, { align: "center" });
 
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text("Aura by Airapí • Homenajes con Dignidad", 105, 285, { align: "center" });
+    // Footer
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(0.3);
+    doc.line(20, 278, pageW - 20, 278);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 100, 100);
+    doc.text("Aura Forever Friends • Homenajes con Dignidad", pageW / 2, 283, { align: "center" });
 
     doc.save(`Recibo_Recoleccion_${order.folio}.pdf`);
 };
 
+// ─── Acta de Entrega de Cenizas ───────────────────────────────────────────────
+export const generateAshDeliveryReceipt = async (order: any) => {
+    const logo = await fetchLogoDataUrl();
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const gold: [number, number, number] = [212, 175, 55];
+
+    applyBranding(doc, "ACTA DE ENTREGA DE CENIZAS", logo);
+
+    const today = new Date().toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" });
+
+    doc.setTextColor(30, 30, 30);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text(`FOLIO: ${order.folio}`, pageW - 20, 55, { align: "right" });
+    doc.text(`FECHA DE ENTREGA: ${today}`, pageW - 20, 62, { align: "right" });
+
+    // Declaración formal
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(10);
+    doc.setTextColor(60, 60, 60);
+    const declaration = `En la ciudad de México, siendo el día ${today}, el personal de AURA Forever Friends hace formal entrega de los restos del proceso de cremación de la mascota que a continuación se describe, al propietario registrado en el presente folio.`;
+    const splitDecl = doc.splitTextToSize(declaration, pageW - 45);
+    doc.text(splitDecl, 25, 70);
+
+    // Datos de la mascota
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(0.4);
+    doc.line(20, 88, pageW - 20, 88);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(30, 30, 30);
+    doc.text("DATOS DE LA MASCOTA", 25, 97);
+
+    doc.setFillColor(248, 248, 248);
+    doc.rect(20, 101, pageW - 40, 38, "F");
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Nombre:`, 26, 111);
+    doc.setFont("helvetica", "bold");
+    doc.text(order.pet?.name || "N/A", 60, 111);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Especie:`, 26, 119);
+    doc.text(`${order.pet?.species || "N/A"} — ${order.pet?.breed || "Raza única"}`, 60, 119);
+    doc.text(`Peso aprox:`, 26, 127);
+    doc.text(`${order.pet?.weightKg || "N/A"} kg`, 60, 127);
+    doc.text(`Fecha de servicio:`, 26, 135);
+    doc.text(new Date(order.createdAt).toLocaleDateString("es-MX"), 60, 135);
+
+    // Datos del propietario
+    doc.setLineWidth(0.4);
+    doc.line(20, 146, pageW - 20, 146);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(30, 30, 30);
+    doc.text("DATOS DEL PROPIETARIO", 25, 155);
+
+    doc.setFillColor(248, 248, 248);
+    doc.rect(20, 159, pageW - 40, 28, "F");
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Nombre:`, 26, 169);
+    doc.setFont("helvetica", "bold");
+    doc.text(order.owner?.name || "N/A", 60, 169);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Teléfono:`, 26, 178);
+    doc.text(order.owner?.phone || "N/A", 60, 178);
+
+    // Foto de entrega
+    if (order.deliveryPhoto) {
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100, 100, 100);
+        doc.text("Evidencia fotográfica de la entrega:", 25, 197);
+        doc.addImage(order.deliveryPhoto, "JPEG", 25, 200, 55, 38);
+    }
+
+    // Declaración final
+    doc.setLineWidth(0.4);
+    doc.setDrawColor(...gold);
+    const declY = order.deliveryPhoto ? 247 : 198;
+    doc.line(20, declY, pageW - 20, declY);
+
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.setTextColor(60, 60, 60);
+    const finalText = "El propietario recibe las cenizas a su entera satisfacción, dando por concluido el proceso de cremación con los estándares de calidad y dignidad de Aura Forever Friends.";
+    const splitFinal = doc.splitTextToSize(finalText, pageW - 45);
+    doc.text(splitFinal, 25, declY + 9);
+
+    // Firmas
+    const signY = declY + 28;
+    doc.setDrawColor(30, 30, 30);
+    doc.setLineWidth(0.3);
+
+    doc.line(25, signY, 90, signY);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(30, 30, 30);
+    doc.text("Firma del Propietario / Familiar", 57, signY + 6, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text(order.owner?.name || "", 57, signY + 12, { align: "center" });
+
+    doc.line(pageW - 90, signY, pageW - 25, signY);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(30, 30, 30);
+    doc.text("Responsable de Entrega AURA", pageW - 57, signY + 6, { align: "center" });
+    doc.text("Sello / Firma:", pageW - 57, signY + 13, { align: "center" });
+
+    // Footer
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(0.3);
+    doc.line(20, 279, pageW - 20, 279);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Aura Forever Friends • Homenajes con Dignidad • Folio: ${order.folio}`, pageW / 2, 284, { align: "center" });
+
+    doc.save(`Entrega_Cenizas_${order.folio}.pdf`);
+};
+
 export const generateContractPDF = (contract: any) => {
     const doc = new jsPDF();
+    const pageW = doc.internal.pageSize.getWidth();
 
-    applyBranding(doc, "CONTRATO DE PREVISIÓN");
+    // Simple legacy branding (sync)
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, pageW, 46, "F");
+    doc.setTextColor(212, 175, 55);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.text("AURA", pageW / 2, 22, { align: "center" });
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.text("CONTRATO DE PREVISIÓN", pageW / 2, 39, { align: "center" });
+    doc.setDrawColor(212, 175, 55);
+    doc.setLineWidth(0.5);
+    doc.line(20, 46, pageW - 20, 46);
 
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(12);
@@ -190,7 +370,6 @@ export const generateContractPDF = (contract: any) => {
     const splitClauses = doc.splitTextToSize(clauses, 170);
     doc.text(splitClauses, 20, 115);
 
-    // --- Signature ---
     doc.line(120, 250, 180, 250);
     doc.text("Firma del Titular", 150, 255, { align: "center" });
 

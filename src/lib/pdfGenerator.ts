@@ -1,3 +1,53 @@
+import path from "path";
+import fs from "fs";
+
+// ─── Helper: carga el logo desde public/logo.png como base64 ──────────────────
+const loadLogoBase64 = (): string | null => {
+    try {
+        const logoPath = path.join(process.cwd(), "public", "logo.png");
+        return fs.readFileSync(logoPath).toString("base64");
+    } catch {
+        return null;
+    }
+};
+
+// ─── Helper: aplica encabezado AURA con logo en documentos ───────────────────
+const applyAuraServerHeader = (doc: any, title: string, logoBase64: string | null) => {
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // Fondo oscuro
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 0, pageWidth, 46, "F");
+
+    // Logo centrado
+    if (logoBase64) {
+        try {
+            doc.addImage(`data:image/png;base64,${logoBase64}`, "PNG", pageWidth / 2 - 20, 3, 40, 30);
+        } catch {
+            doc.setTextColor(212, 175, 55);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(22);
+            doc.text("AURA", pageWidth / 2, 22, { align: "center" });
+        }
+    } else {
+        doc.setTextColor(212, 175, 55);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.text("AURA", pageWidth / 2, 22, { align: "center" });
+    }
+
+    // Título en blanco
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bolditalic");
+    doc.text(title.toUpperCase(), pageWidth / 2, 40, { align: "center" });
+
+    // Línea dorada
+    doc.setDrawColor(212, 175, 55);
+    doc.setLineWidth(0.5);
+    doc.line(20, 46, pageWidth - 20, 46);
+};
+
 // ─── Certificado de Cremación ────────────────────────────────────────────────
 
 interface CertificateData {
@@ -43,37 +93,20 @@ export const generateCremationCertificate = async (data: CertificateData): Promi
     const dark: [number, number, number] = [30, 30, 30];
     const gray: [number, number, number] = [100, 100, 100];
 
-    // ── Encabezado ──────────────────────────────────────────────────────────
-    doc.setFontSize(24);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...gold);
-    doc.text("AURA", marginX, 22);
+    // ── Encabezado con logo ──────────────────────────────────────────────────
+    const logoBase64 = loadLogoBase64();
+    applyAuraServerHeader(doc, "Certificado de Cremación", logoBase64);
 
-    doc.setFontSize(9);
+    // Subencabezado: empresa + número de certificado + fecha
+    doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...gray);
-    doc.text("FOREVER FRIENDS  ·  " + data.empresa.nombre, marginX, 27);
-
-    // Línea divisoria dorada
-    doc.setDrawColor(...gold);
-    doc.setLineWidth(0.5);
-    doc.line(marginX, 31, pageWidth - marginX, 31);
-
-    // Título del documento
-    doc.setFontSize(15);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...dark);
-    doc.text("CERTIFICADO DE CREMACIÓN", pageWidth / 2, 42, { align: "center" });
-
-    // Número y fecha de emisión
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(...gray);
-    doc.text(`No. ${data.sesion.numeroCertificado}`, marginX, 52);
-    doc.text(`Fecha de emisión: ${new Date().toLocaleDateString("es-MX")}`, pageWidth - marginX, 52, { align: "right" });
+    doc.text(data.empresa.nombre.toUpperCase(), marginX, 53);
+    doc.text(`No. ${data.sesion.numeroCertificado}`, pageWidth / 2, 53, { align: "center" });
+    doc.text(`Emisión: ${new Date().toLocaleDateString("es-MX")}`, pageWidth - marginX, 53, { align: "right" });
 
     // ── Sección: Datos de la mascota ────────────────────────────────────────
-    let y = 65;
+    let y = 63;
     const sectionLabel = (text: string, yPos: number) => {
         doc.setFontSize(10);
         doc.setFont("helvetica", "bold");
@@ -426,7 +459,7 @@ export const generatePrevisionContractPDF = async (data: ContractData) => {
         dynamicContent = dynamicContent.replace(/{{CLIENTE_NOMBRE}}/g, data.owner.name);
         dynamicContent = dynamicContent.replace(/{{CLIENTE_DIRECCION}}/g, data.owner.address || "No especificada");
         dynamicContent = dynamicContent.replace(/{{PLAN_NOMBRE}}/g, data.plan.name);
-        dynamicContent = dynamicContent.replace(/{{PLAN_PRECIO}}/g, `$${data.plan.price.toLocaleString("en-US")} MXN`);
+        dynamicContent = dynamicContent.replace(/{{PLAN_PRECIO}}/g, `$${data.plan.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN`);
         dynamicContent = dynamicContent.replace(/{{FECHA_ACTUAL}}/g, new Date(data.contract.startDate).toLocaleDateString());
         dynamicContent = dynamicContent.replace(/{{EMPRESA_NOMBRE}}/g, data.system.legalName || "Aura Mascotas");
         dynamicContent = dynamicContent.replace(/{{REPRESENTANTE}}/g, data.system.legalRepresentative || "Representante de Ventas");
@@ -467,18 +500,18 @@ Ambas partes acuerdan sujetarse a las siguientes cláusulas relacionadas con el 
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
         doc.text(`Costo Total del Plan:`, marginX + 10, yEcon + 10);
-        doc.text(`$${data.plan.price.toLocaleString("en-US")} MXN`, marginX + 70, yEcon + 10);
+        doc.text(`$${data.plan.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN`, marginX + 70, yEcon + 10);
 
         doc.text(`Pago Inicial (Enganche):`, marginX + 10, yEcon + 18);
-        doc.text(`$${data.contract.downPayment.toLocaleString("en-US")} MXN`, marginX + 70, yEcon + 18);
+        doc.text(`$${data.contract.downPayment.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN`, marginX + 70, yEcon + 18);
 
         const saldoPrestante = data.plan.price - data.contract.downPayment;
         doc.text(`Saldo Restante:`, marginX + 10, yEcon + 26);
-        doc.text(`$${saldoPrestante.toLocaleString("en-US")} MXN`, marginX + 70, yEcon + 26);
+        doc.text(`$${saldoPrestante.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN`, marginX + 70, yEcon + 26);
 
         doc.text(`Esquema de Pagos:`, marginX + 10, yEcon + 34);
         doc.setFont("helvetica", "bold");
-        doc.text(`${data.plan.installmentsCount} cuotas de $${data.contract.installmentAmount.toLocaleString("en-US")} MXN`, marginX + 70, yEcon + 34);
+        doc.text(`${data.plan.installmentsCount} cuotas de $${data.contract.installmentAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MXN`, marginX + 70, yEcon + 34);
 
         // Cláusulas Generales
         doc.setFontSize(10);
