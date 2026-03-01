@@ -13,6 +13,11 @@ export async function GET() {
             serviceOrders: { where: { status: { notIn: ["COMPLETED"] } } },
           },
         },
+        users: {
+          where: { role: "GERENTE_SUCURSAL" },
+          select: { id: true, name: true, email: true },
+          take: 1,
+        },
       },
     });
     return NextResponse.json(sucursales);

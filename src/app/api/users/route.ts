@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
+        const url = new URL(req.url);
+        const roleFilter = url.searchParams.get("role");
         const users = await prisma.user.findMany({
+            where: roleFilter ? { role: roleFilter } : undefined,
             select: {
                 id: true,
                 name: true,

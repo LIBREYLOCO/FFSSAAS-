@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Building2, Plus, MapPin, Phone, Mail, Pencil, X,
   ToggleLeft, ToggleRight, CheckCircle, AlertCircle,
-  Grid3X3, Map, Navigation, Search, Loader2, Route,
+  Grid3X3, Map, Navigation, Search, Loader2, Route, UserCog, ChevronDown,
 } from "lucide-react";
 
 // ── Leaflet (client-only, no SSR) ─────────────────────────────────────────────
@@ -19,6 +19,12 @@ const Polyline         = dynamic(() => import("react-leaflet").then((m) => m.Pol
 const LocationPickerMap = dynamic(() => import("@/components/LocationPickerMap"),            { ssr: false });
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+interface GerenteUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
 interface Sucursal {
   id: string;
   nombre: string;
@@ -33,6 +39,7 @@ interface Sucursal {
   isActive: boolean;
   createdAt: string;
   _count?: { users: number; serviceOrders: number; drivers: number };
+  users?: GerenteUser[];
 }
 
 const EMPTY_FORM = {
@@ -68,6 +75,16 @@ export default function SucursalesPage() {
   const [leafletReady, setLeafletReady] = useState(false);
   const [L, setL]                     = useState<any>(null);
 
+  // Manager (gerente) state
+  const [gerenteSearch, setGerenteSearch]         = useState("");
+  const [gerenteId, setGerenteId]                 = useState<string | null>(null);
+  const [gerenteSelected, setGerenteSelected]     = useState<GerenteUser | null>(null);
+  const [gerenteUsers, setGerenteUsers]           = useState<GerenteUser[]>([]);
+  const [gerenteDropOpen, setGerenteDropOpen]     = useState(false);
+  const [showCreateGerente, setShowCreateGerente] = useState(false);
+  const [newGerente, setNewGerente]               = useState({ name: "", email: "", password: "" });
+  const [loadingGerentes, setLoadingGerentes]     = useState(false);
+
   // Nearest-branch finder
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching]     = useState(false);
@@ -102,12 +119,32 @@ export default function SucursalesPage() {
 
   useEffect(() => { fetchSucursales(); }, []);
 
+  const fetchGerentes = () => {
+    setLoadingGerentes(true);
+    fetch("/api/users?role=GERENTE_SUCURSAL")
+      .then((r) => r.json())
+      .then((data) => setGerenteUsers(Array.isArray(data) ? data : []))
+      .catch(console.error)
+      .finally(() => setLoadingGerentes(false));
+  };
+
+  const resetGerenteState = (existing?: GerenteUser | null) => {
+    setGerenteId(existing?.id ?? null);
+    setGerenteSelected(existing ?? null);
+    setGerenteSearch(existing?.name ?? "");
+    setGerenteDropOpen(false);
+    setShowCreateGerente(false);
+    setNewGerente({ name: "", email: "", password: "" });
+  };
+
   // ── Modal helpers ─────────────────────────────────────────────────────────
   const openCreate = () => {
     setEditing(null);
     setForm(EMPTY_FORM);
     setError("");
     setFlyTrigger(0);
+    resetGerenteState(null);
+    fetchGerentes();
     setModalOpen(true);
   };
 
@@ -121,6 +158,8 @@ export default function SucursalesPage() {
     });
     setError("");
     setFlyTrigger(0);
+    resetGerenteState(s.users?.[0] ?? null);
+    fetchGerentes();
     setModalOpen(true);
   };
 
@@ -157,6 +196,10 @@ export default function SucursalesPage() {
       setError("Nombre y código son requeridos.");
       return;
     }
+    if (showCreateGerente && (!newGerente.name || !newGerente.email || !newGerente.password)) {
+      setError("Completa los datos del nuevo gerente.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
@@ -174,6 +217,30 @@ export default function SucursalesPage() {
       );
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Error al guardar."); return; }
+
+      const sucursalId = data.id;
+
+      if (showCreateGerente && newGerente.name && newGerente.email) {
+        // Create new manager user and link to this sucursal
+        const createRes = await fetch("/api/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...newGerente, role: "GERENTE_SUCURSAL", sucursalId }),
+        });
+        if (!createRes.ok) {
+          const err = await createRes.json();
+          setError(err.error || "Error al crear gerente.");
+          return;
+        }
+      } else if (gerenteId) {
+        // Link selected existing manager to this sucursal
+        await fetch(`/api/users/${gerenteId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sucursalId }),
+        });
+      }
+
       setModalOpen(false);
       fetchSucursales();
     } catch {
@@ -365,6 +432,13 @@ export default function SucursalesPage() {
                     </button>
                   )}
                 </div>
+
+                {s.users?.[0] && (
+                  <div className="flex items-center gap-2 text-xs text-brand-gold-400/80">
+                    <UserCog size={12} className="shrink-0" />
+                    <span className="truncate">{s.users[0].name}</span>
+                  </div>
+                )}
 
                 {s._count && (
                   <div className="flex gap-3 pt-2 border-t border-white/10 text-xs text-slate-400">
@@ -685,6 +759,119 @@ export default function SucursalesPage() {
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                   />
+                </div>
+
+                {/* ── Manager (Gerente) selector ── */}
+                <div className="col-span-2 border-t border-white/10 pt-4 space-y-3">
+                  <label className="text-xs text-slate-400 font-bold flex items-center gap-1.5">
+                    <UserCog size={13} className="text-brand-gold-500" />
+                    Gerente de Sucursal
+                  </label>
+
+                  {gerenteSelected ? (
+                    /* Selected manager chip */
+                    <div className="flex items-center gap-3 p-3 bg-brand-gold-500/10 border border-brand-gold-500/20 rounded-xl">
+                      <div className="w-8 h-8 rounded-full bg-brand-gold-500/20 flex items-center justify-center text-brand-gold-500 font-bold text-sm shrink-0">
+                        {gerenteSelected.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate">{gerenteSelected.name}</p>
+                        <p className="text-xs text-slate-400 truncate">{gerenteSelected.email}</p>
+                      </div>
+                      <button
+                        onClick={() => { setGerenteSelected(null); setGerenteId(null); setGerenteSearch(""); }}
+                        className="text-slate-500 hover:text-red-400 transition-colors"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : showCreateGerente ? (
+                    /* Inline create manager form */
+                    <div className="space-y-3 p-4 bg-white/5 rounded-xl border border-white/10">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-xs font-bold text-emerald-400">Crear nuevo gerente</p>
+                        <button onClick={() => { setShowCreateGerente(false); setNewGerente({ name: "", email: "", password: "" }); }} className="text-slate-500 hover:text-white">
+                          <X size={14} />
+                        </button>
+                      </div>
+                      <input
+                        className="input-field w-full text-sm"
+                        placeholder="Nombre completo"
+                        value={newGerente.name}
+                        onChange={(e) => setNewGerente({ ...newGerente, name: e.target.value })}
+                      />
+                      <input
+                        className="input-field w-full text-sm"
+                        type="email"
+                        placeholder="correo@empresa.com"
+                        value={newGerente.email}
+                        onChange={(e) => setNewGerente({ ...newGerente, email: e.target.value })}
+                      />
+                      <input
+                        className="input-field w-full text-sm"
+                        type="password"
+                        placeholder="Contraseña (mín. 8 caracteres)"
+                        value={newGerente.password}
+                        onChange={(e) => setNewGerente({ ...newGerente, password: e.target.value })}
+                      />
+                    </div>
+                  ) : (
+                    /* Search dropdown */
+                    <div className="relative">
+                      <div className="relative">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                        <input
+                          className="input-field w-full pl-9 pr-8 text-sm"
+                          placeholder="Buscar gerente existente..."
+                          value={gerenteSearch}
+                          onChange={(e) => { setGerenteSearch(e.target.value); setGerenteDropOpen(true); }}
+                          onFocus={() => setGerenteDropOpen(true)}
+                          onBlur={() => setTimeout(() => setGerenteDropOpen(false), 150)}
+                        />
+                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
+                      </div>
+
+                      {gerenteDropOpen && (
+                        <div className="absolute z-10 top-full mt-1 w-full bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-2xl max-h-48 overflow-y-auto">
+                          {loadingGerentes ? (
+                            <div className="flex items-center justify-center p-4">
+                              <Loader2 size={16} className="animate-spin text-brand-gold-500" />
+                            </div>
+                          ) : (
+                            <>
+                              {gerenteUsers
+                                .filter((u) => u.name.toLowerCase().includes(gerenteSearch.toLowerCase()) || u.email.toLowerCase().includes(gerenteSearch.toLowerCase()))
+                                .map((u) => (
+                                  <button
+                                    key={u.id}
+                                    type="button"
+                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-colors text-left"
+                                    onClick={() => { setGerenteSelected(u); setGerenteId(u.id); setGerenteSearch(u.name); setGerenteDropOpen(false); }}
+                                  >
+                                    <div className="w-7 h-7 rounded-full bg-brand-gold-500/20 flex items-center justify-center text-brand-gold-500 font-bold text-xs shrink-0">
+                                      {u.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-medium truncate">{u.name}</p>
+                                      <p className="text-xs text-slate-500 truncate">{u.email}</p>
+                                    </div>
+                                  </button>
+                                ))}
+                              {/* Create option */}
+                              <button
+                                type="button"
+                                className="w-full flex items-center gap-2 px-4 py-3 text-emerald-400 hover:bg-emerald-500/10 transition-colors text-sm font-bold border-t border-white/5"
+                                onClick={() => { setShowCreateGerente(true); setGerenteDropOpen(false); setNewGerente({ name: gerenteSearch, email: "", password: "" }); }}
+                              >
+                                <Plus size={14} />
+                                {gerenteSearch ? `Crear "${gerenteSearch}" como gerente` : "Crear nuevo gerente"}
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Location picker section */}

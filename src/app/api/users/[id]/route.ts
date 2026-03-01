@@ -10,11 +10,12 @@ export async function PATCH(
     try {
         const { id } = await params;
         const body = await request.json();
-        const { role, isActive, password } = body;
+        const { role, isActive, password, sucursalId } = body;
 
         const data: Record<string, unknown> = {};
         if (role !== undefined) data.role = role;
         if (isActive !== undefined) data.isActive = isActive;
+        if (sucursalId !== undefined) data.sucursalId = sucursalId || null;
         if (password) {
             if (password.length < 8) {
                 return NextResponse.json(
