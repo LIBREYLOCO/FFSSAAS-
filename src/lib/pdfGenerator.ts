@@ -518,3 +518,151 @@ Ambas partes acuerdan sujetarse a las siguientes cláusulas relacionadas con el 
     const fileName = data.template?.name ? `${data.template.name.replace(/\s+/g, '_')}_${data.contract.id}.pdf` : `Contrato_Prevision_${data.contract.id}.pdf`;
     doc.save(fileName);
 };
+
+// ─── Reporte Genérico (con logo y tabla) ─────────────────────────────────────
+
+/**
+ * Genera un PDF de reporte con encabezado AURA, logo de la empresa, título y tabla de datos.
+ * @param title  Título del reporte (ej. "Reporte de Servicios")
+ * @param columns  Array de { key, label, width? } para las columnas de la tabla
+ * @param rows  Array de objetos con los datos
+ * @param filename  Nombre del archivo PDF a descargar
+ * @param empresa  Nombre de la empresa (obtenido de SystemConfig)
+ */
+export const generateReportPDF = async (
+    title: string,
+    columns: { key: string; label: string; width?: number }[],
+    rows: Record<string, unknown>[],
+    filename: string,
+    empresa: string = "Aura Forever Friends"
+): Promise<void> => {
+    const { jsPDF } = await import("jspdf");
+
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "letter" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginX = 18;
+    const gold: [number, number, number] = [212, 175, 55];
+    const dark: [number, number, number] = [20, 20, 20];
+    const lightGray: [number, number, number] = [245, 245, 245];
+    const textGray: [number, number, number] = [100, 100, 100];
+
+    // ── Logo / Header ────────────────────────────────────────────────────────
+    try {
+        const logoRes = await fetch("/logo.png");
+        if (logoRes.ok) {
+            const blob = await logoRes.blob();
+            const reader = new FileReader();
+            const logoData = await new Promise<string>((resolve) => {
+                reader.onload = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+            });
+            doc.addImage(logoData, "PNG", marginX, 8, 16, 16);
+        }
+    } catch {}
+
+    // Brand name
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...gold);
+    doc.text("AURA", marginX + 20, 15);
+
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...textGray);
+    doc.text("FOREVER FRIENDS  ·  " + empresa.toUpperCase(), marginX + 20, 19);
+
+    // Date
+    const dateStr = new Date().toLocaleDateString("es-MX", { dateStyle: "long" });
+    doc.setFontSize(7);
+    doc.text(dateStr, pageWidth - marginX, 15, { align: "right" });
+
+    // Gold separator line
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(0.5);
+    doc.line(marginX, 27, pageWidth - marginX, 27);
+
+    // Title
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...dark);
+    doc.text(title, marginX, 35);
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...textGray);
+    doc.text(`${rows.length} registros`, marginX, 40);
+
+    // ── Table ────────────────────────────────────────────────────────────────
+    const tableTop = 46;
+    const rowHeight = 7;
+    const colWidths = columns.map(c => c.width ?? (pageWidth - marginX * 2) / columns.length);
+    let currentX = marginX;
+
+    // Header row background
+    doc.setFillColor(30, 30, 30);
+    doc.rect(marginX, tableTop, pageWidth - marginX * 2, rowHeight, "F");
+
+    // Header labels
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...gold);
+    columns.forEach((col, i) => {
+        doc.text(col.label.toUpperCase(), currentX + 2, tableTop + 4.5);
+        currentX += colWidths[i];
+    });
+
+    // Rows
+    let y = tableTop + rowHeight;
+    rows.forEach((row, rowIdx) => {
+        if (y + rowHeight > pageHeight - 15) {
+            doc.addPage();
+            y = 20;
+            // Repeat header on new page
+            doc.setFillColor(...dark);
+            doc.rect(marginX, y, pageWidth - marginX * 2, rowHeight, "F");
+            doc.setFontSize(7);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(...gold);
+            let hx = marginX;
+            columns.forEach((col, i) => {
+                doc.text(col.label.toUpperCase(), hx + 2, y + 4.5);
+                hx += colWidths[i];
+            });
+            y += rowHeight;
+        }
+
+        if (rowIdx % 2 === 0) {
+            doc.setFillColor(...lightGray);
+            doc.rect(marginX, y, pageWidth - marginX * 2, rowHeight, "F");
+        }
+
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(50, 50, 50);
+
+        let cx = marginX;
+        columns.forEach((col, i) => {
+            const cellVal = String(row[col.key] ?? "");
+            const maxWidth = colWidths[i] - 4;
+            const truncated = doc.getTextWidth(cellVal) > maxWidth
+                ? cellVal.substring(0, Math.floor(maxWidth / (doc.getTextWidth(cellVal) / cellVal.length))) + "…"
+                : cellVal;
+            doc.text(truncated, cx + 2, y + 4.5);
+            cx += colWidths[i];
+        });
+
+        y += rowHeight;
+    });
+
+    // Bottom gold line + footer
+    doc.setDrawColor(...gold);
+    doc.setLineWidth(0.3);
+    doc.line(marginX, pageHeight - 12, pageWidth - marginX, pageHeight - 12);
+    doc.setFontSize(6);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...textGray);
+    doc.text(`${empresa}  ·  Generado ${dateStr}`, pageWidth / 2, pageHeight - 7, { align: "center" });
+
+    doc.save(filename);
+};

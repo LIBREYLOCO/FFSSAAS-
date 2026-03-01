@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, TrendingUp, DollarSign, FileText, CheckCircle2, Clock, ChevronDown, ChevronUp, User } from "lucide-react";
+import { X, TrendingUp, DollarSign, FileText, CheckCircle2, Clock, ChevronDown, ChevronUp, User, Loader2 } from "lucide-react";
 import { formatMXN } from "@/lib/format";
 
 interface CommissionReportModalProps {
@@ -15,27 +15,48 @@ export default function CommissionReportModal({ isOpen, onClose, personId }: Com
     const [loading, setLoading] = useState(false);
     const [person, setPerson] = useState<any>(null);
     const [expanded, setExpanded] = useState<string | null>(null);
+    const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+    const fetchPerson = () => {
+        if (!personId) return;
+        setLoading(true);
+        fetch(`/api/vendedores/${personId}`)
+            .then(r => r.ok ? r.json() : null)
+            .then(data => { setPerson(data); setLoading(false); })
+            .catch(() => setLoading(false));
+    };
 
     useEffect(() => {
         if (isOpen && personId) {
-            setLoading(true);
-            fetch(`/api/vendedores/${personId}`)
-                .then(r => r.ok ? r.json() : null)
-                .then(data => { setPerson(data); setLoading(false); })
-                .catch(() => setLoading(false));
+            fetchPerson();
         }
     }, [isOpen, personId]);
 
+    const handleMarkAsPaid = async (commissionId: string) => {
+        setUpdatingId(commissionId);
+        try {
+            const res = await fetch("/api/commissions", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ commissionId, status: "PAID" })
+            });
+            if (res.ok) {
+                fetchPerson();
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setUpdatingId(null);
+        }
+    };
+
     if (!isOpen) return null;
 
-    const commissionRate = person ? Number(person.commissionRate) / 100 : 0;
-
-    // Summarize all contracts
-    const contracts = person?.contracts || [];
-    const totalSales = contracts.reduce((acc: number, c: any) => acc + Number(c.plan?.price ?? 0), 0);
-    const totalPaidByClients = contracts.reduce((acc: number, c: any) =>
-        acc + (c.payments ?? []).reduce((s: number, p: any) => s + (p.status === "PAID" ? Number(p.amount) : 0), 0), 0);
-    const totalCommission = totalPaidByClients * commissionRate;
+    // Actual commissions from DB
+    const commissions = person?.commissions || [];
+    const totalGenerated = commissions.reduce((acc: number, c: any) => acc + Number(c.amount), 0);
+    const totalPaid = commissions.filter((c: any) => c.status === "PAID").reduce((acc: number, c: any) => acc + Number(c.amount), 0);
+    const totalPending = totalGenerated - totalPaid;
 
     const levelColor: Record<string, string> = {
         JUNIOR: "text-blue-400 bg-blue-500/10 border-blue-500/20",
@@ -57,7 +78,6 @@ export default function CommissionReportModal({ isOpen, onClose, personId }: Com
                     <div className="sticky top-0 z-10 glass-card px-8 pt-8 pb-5 rounded-t-[40px] border-b border-white/5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
-                                {/* Avatar */}
                                 <div className="w-14 h-14 rounded-2xl bg-brand-gold-500/10 border border-brand-gold-500/20 overflow-hidden flex items-center justify-center">
                                     {person?.photoUrl ? (
                                         <img src={person.photoUrl} alt={person.name} className="w-full h-full object-cover" />
@@ -66,7 +86,7 @@ export default function CommissionReportModal({ isOpen, onClose, personId }: Com
                                     )}
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold">{loading ? "Cargando…" : (person?.name ?? "Vendedor")}</h2>
+                                    <h2 className="text-xl font-bold">{loading && !person ? "Cargando…" : (person?.name ?? "Vendedor")}</h2>
                                     {person && (
                                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border uppercase tracking-widest ${levelColor[person.level] ?? "text-slate-400 bg-white/5 border-white/10"}`}>
                                             {person.level}
@@ -80,7 +100,7 @@ export default function CommissionReportModal({ isOpen, onClose, personId }: Com
                         </div>
                     </div>
 
-                    {loading ? (
+                    {loading && !person ? (
                         <div className="flex items-center justify-center py-20">
                             <div className="w-8 h-8 border-2 border-brand-gold-500/30 border-t-brand-gold-500 rounded-full animate-spin" />
                         </div>
@@ -89,59 +109,54 @@ export default function CommissionReportModal({ isOpen, onClose, personId }: Com
                             {/* KPI cards */}
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center space-y-1">
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase">Contratos</p>
-                                    <p className="text-2xl font-black">{contracts.length}</p>
-                                </div>
-                                <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center space-y-1">
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase">Total en Ventas</p>
-                                    <p className="text-lg font-black text-brand-gold-500">{formatMXN(totalSales)}</p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase">Total Generado</p>
+                                    <p className="text-lg font-black text-brand-gold-500">{formatMXN(totalGenerated)}</p>
                                 </div>
                                 <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center space-y-1">
-                                    <p className="text-[10px] font-bold text-emerald-500/70 uppercase">Comisión Generada</p>
-                                    <p className="text-lg font-black text-emerald-400">{formatMXN(totalCommission)}</p>
-                                    <p className="text-[9px] text-emerald-500/60 font-bold">{(commissionRate * 100).toFixed(1)}% de lo cobrado</p>
+                                    <p className="text-[10px] font-bold text-emerald-500/70 uppercase">Pagado</p>
+                                    <p className="text-xl font-black text-emerald-400">{formatMXN(totalPaid)}</p>
+                                </div>
+                                <div className="p-4 rounded-2xl bg-brand-gold-500/10 border border-brand-gold-500/20 text-center space-y-1">
+                                    <p className="text-[10px] font-bold text-brand-gold-500 uppercase">Pendiente</p>
+                                    <p className="text-xl font-black text-brand-gold-500">{formatMXN(totalPending)}</p>
                                 </div>
                             </div>
 
-                            {/* Contracts list */}
+                            {/* Commissions list */}
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2 text-slate-400">
-                                    <FileText size={16} className="text-brand-gold-500" />
-                                    <span className="text-xs font-black uppercase tracking-widest">Detalle por Contrato</span>
+                                    <DollarSign size={16} className="text-brand-gold-500" />
+                                    <span className="text-xs font-black uppercase tracking-widest">Detalle de Comisiones de Previsión</span>
                                 </div>
 
-                                {contracts.length === 0 ? (
+                                {commissions.length === 0 ? (
                                     <div className="py-12 text-center text-slate-500 glass-card rounded-3xl">
                                         <TrendingUp size={32} className="mx-auto mb-3 opacity-30" />
-                                        <p className="text-sm font-bold">Sin contratos asignados aún</p>
+                                        <p className="text-sm font-bold">No hay comisiones de previsión registradas.</p>
                                     </div>
-                                ) : contracts.map((contract: any) => {
-                                    const paidAmt = (contract.payments ?? []).reduce((s: number, p: any) =>
-                                        s + (p.status === "PAID" ? Number(p.amount) : 0), 0);
-                                    const planPrice = Number(contract.plan?.price ?? 0);
-                                    const progress = planPrice > 0 ? Math.min(100, (paidAmt / planPrice) * 100) : 0;
-                                    const commissionEarned = paidAmt * commissionRate;
-                                    const isExpanded = expanded === contract.id;
+                                ) : commissions.map((c: any) => {
+                                    const isExpanded = expanded === c.id;
+                                    const isPaid = c.status === "PAID";
 
                                     return (
-                                        <div key={contract.id} className="rounded-3xl bg-white/5 border border-white/5 overflow-hidden">
+                                        <div key={c.id} className="rounded-3xl bg-white/5 border border-white/5 overflow-hidden">
                                             <button
-                                                onClick={() => setExpanded(isExpanded ? null : contract.id)}
+                                                onClick={() => setExpanded(isExpanded ? null : c.id)}
                                                 className="w-full p-5 flex items-center justify-between hover:bg-white/5 transition-colors"
                                             >
                                                 <div className="flex items-center gap-4 text-left">
-                                                    <div className={`p-2 rounded-xl ${contract.status === "ACTIVE" ? "bg-emerald-500/10 text-emerald-500" : "bg-slate-500/10 text-slate-500"}`}>
-                                                        {contract.status === "ACTIVE" ? <Clock size={16} /> : <CheckCircle2 size={16} />}
+                                                    <div className={`p-2 rounded-xl ${isPaid ? "bg-emerald-500/10 text-emerald-500" : "bg-brand-gold-500/10 text-brand-gold-500"}`}>
+                                                        {isPaid ? <CheckCircle2 size={16} /> : <Clock size={16} />}
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-sm">{contract.owner?.name ?? "—"}</p>
-                                                        <p className="text-[10px] text-slate-500 font-bold uppercase">{contract.plan?.name}</p>
+                                                        <p className="font-bold text-sm">{c.contract?.owner?.name ?? "Cliente"}</p>
+                                                        <p className="text-[10px] text-slate-500 font-bold uppercase">{c.contract?.plan?.name}</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-6 text-right">
                                                     <div>
-                                                        <p className="text-[10px] text-slate-500 uppercase font-bold">Comisión</p>
-                                                        <p className="text-sm font-black text-emerald-400">{formatMXN(commissionEarned)}</p>
+                                                        <p className="text-[10px] text-slate-500 uppercase font-bold">Monto</p>
+                                                        <p className={`text-sm font-black ${isPaid ? "text-emerald-400" : "text-brand-gold-500"}`}>{formatMXN(c.amount)}</p>
                                                     </div>
                                                     {isExpanded ? <ChevronUp size={16} className="text-slate-500" /> : <ChevronDown size={16} className="text-slate-500" />}
                                                 </div>
@@ -156,42 +171,30 @@ export default function CommissionReportModal({ isOpen, onClose, personId }: Com
                                                         className="border-t border-white/5"
                                                     >
                                                         <div className="p-5 space-y-4">
-                                                            {/* Progress bar */}
-                                                            <div className="space-y-1">
-                                                                <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
-                                                                    <span>Cobrado</span>
-                                                                    <span>{Math.round(progress)}%</span>
+                                                            <div className="grid grid-cols-2 gap-4 text-[11px]">
+                                                                <div>
+                                                                    <p className="text-slate-500 uppercase font-bold">Pago de Cliente</p>
+                                                                    <p className="text-white font-bold">{formatMXN(c.payment?.amount)} ({c.payment?.type})</p>
+                                                                    <p className="text-slate-500 mt-1">{new Date(c.payment?.paymentDate || c.createdAt).toLocaleDateString("es-MX")}</p>
                                                                 </div>
-                                                                <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                                                    <motion.div
-                                                                        initial={{ width: 0 }}
-                                                                        animate={{ width: `${progress}%` }}
-                                                                        className="h-full bg-brand-gold-500"
-                                                                    />
-                                                                </div>
-                                                                <div className="flex justify-between text-[10px] text-slate-500">
-                                                                    <span>Cobrado: {formatMXN(paidAmt)}</span>
-                                                                    <span>Total plan: {formatMXN(planPrice)}</span>
+                                                                <div className="text-right">
+                                                                    <p className="text-slate-500 uppercase font-bold">Estatus Comisión</p>
+                                                                    <span className={`inline-block px-2 py-0.5 rounded-full font-bold uppercase tracking-widest text-[9px] mt-1 ${isPaid ? "bg-emerald-500/10 text-emerald-500" : "bg-brand-gold-500/10 text-brand-gold-500"}`}>
+                                                                        {isPaid ? "Pagada" : "Pendiente"}
+                                                                    </span>
+                                                                    {c.paidAt && <p className="text-slate-500 mt-1">Pagada el: {new Date(c.paidAt).toLocaleDateString("es-MX")}</p>}
                                                                 </div>
                                                             </div>
 
-                                                            {/* Payment rows */}
-                                                            {contract.payments?.length > 0 && (
-                                                                <div className="space-y-2">
-                                                                    <p className="text-[10px] font-black text-slate-500 uppercase">Pagos registrados</p>
-                                                                    {contract.payments.map((p: any) => (
-                                                                        <div key={p.id} className="flex justify-between items-center text-xs py-2 border-b border-white/5 last:border-0">
-                                                                            <div>
-                                                                                <span className="font-bold">{p.type === "DOWN_PAYMENT" ? "Enganche" : "Mensualidad"}</span>
-                                                                                <span className="text-slate-500 ml-2">{new Date(p.createdAt || p.paymentDate).toLocaleDateString("es-MX")}</span>
-                                                                            </div>
-                                                                            <div className="text-right">
-                                                                                <p className="font-bold text-emerald-400">{formatMXN(p.amount)}</p>
-                                                                                <p className="text-[9px] text-slate-500">Comisión: {formatMXN(Number(p.amount) * commissionRate)}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
+                                                            {!isPaid && (
+                                                                <button
+                                                                    disabled={updatingId === c.id}
+                                                                    onClick={(e) => { e.stopPropagation(); handleMarkAsPaid(c.id); }}
+                                                                    className="w-full py-3 rounded-2xl bg-emerald-500 text-black font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-colors flex items-center justify-center gap-2"
+                                                                >
+                                                                    {updatingId === c.id ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                                                                    Marcar como Pagada
+                                                                </button>
                                                             )}
                                                         </div>
                                                     </motion.div>
@@ -201,18 +204,6 @@ export default function CommissionReportModal({ isOpen, onClose, personId }: Com
                                     );
                                 })}
                             </div>
-
-                            {/* Summary total */}
-                            {contracts.length > 0 && (
-                                <div className="p-5 rounded-3xl bg-brand-gold-500/10 border border-brand-gold-500/20 flex justify-between items-center">
-                                    <div>
-                                        <p className="text-[10px] font-black text-brand-gold-500 uppercase tracking-widest">Total a Pagar</p>
-                                        <p className="text-2xl font-black">{formatMXN(totalCommission)}</p>
-                                        <p className="text-[10px] text-slate-400">sobre {formatMXN(totalPaidByClients)} cobrado</p>
-                                    </div>
-                                    <DollarSign size={48} className="text-brand-gold-500/20" />
-                                </div>
-                            )}
                         </div>
                     ) : (
                         <p className="text-center text-slate-500 py-16">No se pudo cargar la información.</p>

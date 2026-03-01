@@ -19,7 +19,7 @@ export async function GET() {
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { name, level, commissionRate } = body;
+        const { name, level, commissionRate, previsionCommissionRate } = body;
 
         if (!name || !level) {
             return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -29,7 +29,8 @@ export async function POST(request: Request) {
             data: {
                 name,
                 level,
-                commissionRate: Number(commissionRate) || 0.1
+                commissionRate: Number(commissionRate) || 0,
+                previsionCommissionRate: Number(previsionCommissionRate) || 0
             }
         });
 

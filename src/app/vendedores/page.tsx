@@ -122,13 +122,18 @@ export default function VendedoresPage() {
                             {/* Stats */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Comisión</p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Cremación</p>
                                     <p className="text-lg font-black text-brand-gold-500">{Number(person.commissionRate).toFixed(1)}%</p>
                                 </div>
                                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Contratos</p>
-                                    <p className="text-lg font-black">{person._count?.contracts ?? 0}</p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Previsión</p>
+                                    <p className="text-lg font-black text-brand-gold-500">{Number(person.previsionCommissionRate).toFixed(1)}%</p>
                                 </div>
+                            </div>
+
+                            <div className="mt-3 p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
+                                <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Contratos</p>
+                                <p className="text-lg font-black">{person._count?.contracts ?? 0}</p>
                             </div>
 
                             {/* Commission report button */}

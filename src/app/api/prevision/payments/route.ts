@@ -13,7 +13,11 @@ export async function POST(request: Request) {
         const result = await prisma.$transaction(async (tx) => {
             const contract = await tx.previsionContract.findUnique({
                 where: { id: contractId },
-                include: { plan: true, payments: true }
+                include: {
+                    plan: true,
+                    payments: true,
+                    salesperson: true
+                }
             });
 
             if (!contract) throw new Error("Contract not found");
@@ -28,6 +32,22 @@ export async function POST(request: Request) {
                     status: "PAID"
                 }
             });
+
+            // 1.5 Create commission if salesperson exists
+            if (contract.salesperson) {
+                const commissionAmount = Number(amount) * (Number(contract.salesperson.previsionCommissionRate || 0) / 100);
+                if (commissionAmount > 0) {
+                    await tx.commission.create({
+                        data: {
+                            salespersonId: contract.salesperson.id,
+                            paymentId: payment.id,
+                            contractId: contract.id,
+                            amount: commissionAmount,
+                            status: "PENDING"
+                        }
+                    });
+                }
+            }
 
             // 2. Handle products (deduct stock)
             if (products && Array.isArray(products)) {

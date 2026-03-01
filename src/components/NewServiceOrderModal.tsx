@@ -21,12 +21,32 @@ export default function NewServiceOrderModal({ isOpen, onClose, owner, onSuccess
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState(1);
     const [serviceType, setServiceType] = useState<"IMMEDIATE" | "PREVISION" | null>(null);
+    const [priceFromWeight, setPriceFromWeight] = useState<number | null>(null);
     const [formData, setFormData] = useState({
         petId: initialPetId || "",
         contractId: owner?.contracts?.[0]?.id || "",
         price: 3500,
         serviceDate: new Date().toISOString().split('T')[0]
     });
+
+    const lookupPriceByWeight = async (weightKg: number) => {
+        try {
+            const res = await fetch(`/api/pricing?weightKg=${weightKg}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.price !== null) {
+                    setPriceFromWeight(data.price);
+                    setFormData(prev => ({ ...prev, price: data.price }));
+                }
+            }
+        } catch {}
+    };
+
+    const handlePetSelect = (petId: string) => {
+        setFormData(prev => ({ ...prev, petId }));
+        const pet = owner?.pets?.find((p: any) => p.id === petId);
+        if (pet?.weightKg) lookupPriceByWeight(Number(pet.weightKg));
+    };
 
     const [products, setProducts] = useState<any[]>([]);
     const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
@@ -153,7 +173,7 @@ export default function NewServiceOrderModal({ isOpen, onClose, owner, onSuccess
                                             owner.pets?.filter((p: any) => !p.deathDate).map((pet: any) => (
                                                 <button
                                                     key={pet.id}
-                                                    onClick={() => setFormData({ ...formData, petId: pet.id })}
+                                                    onClick={() => handlePetSelect(pet.id)}
                                                     className={`flex items-center gap-4 p-4 rounded-2xl border transition-all text-left ${formData.petId === pet.id
                                                         ? "bg-brand-gold-500/10 border-brand-gold-500/50 text-brand-gold-500 shadow-[0_0_20px_rgba(197,160,89,0.1)]"
                                                         : "bg-white/5 border-white/5 text-slate-400 hover:border-white/10"
@@ -224,13 +244,20 @@ export default function NewServiceOrderModal({ isOpen, onClose, owner, onSuccess
                                             <p className="text-[10px] font-bold uppercase tracking-widest">Información de Cobro</p>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Costo del Servicio (MXN)</label>
+                                            <div className="flex items-center justify-between ml-1 mb-1">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Costo del Servicio (MXN)</label>
+                                                {priceFromWeight !== null && (
+                                                    <span className="text-[10px] font-bold text-emerald-400">
+                                                        Auto-calculado por peso de la mascota
+                                                    </span>
+                                                )}
+                                            </div>
                                             <div className="relative mt-2">
                                                 <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gold-500" size={18} />
                                                 <input
                                                     type="number"
                                                     value={formData.price}
-                                                    onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                                                    onChange={(e) => { setFormData({ ...formData, price: Number(e.target.value) }); setPriceFromWeight(null); }}
                                                     className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-12 pr-6 text-xl font-bold aura-input transition-all"
                                                 />
                                             </div>

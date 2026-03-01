@@ -11,6 +11,7 @@ interface Salesperson {
     name: string;
     level: string;
     commissionRate: number | string;
+    previsionCommissionRate: number | string;
     phone?: string | null;
     email?: string | null;
     photoUrl?: string | null;
@@ -45,7 +46,7 @@ export default function EditSalespersonModal({ isOpen, onClose, onSuccess, perso
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
     const [formData, setFormData] = useState({
-        name: "", level: "JUNIOR", commissionRate: "5.0",
+        name: "", level: "JUNIOR", commissionRate: "5.0", previsionCommissionRate: "5.0",
         phone: "", email: "", photoUrl: "",
     });
     const [address, setAddress] = useState<AddressValues>(emptyAddress());
@@ -56,6 +57,7 @@ export default function EditSalespersonModal({ isOpen, onClose, onSuccess, perso
                 name: person.name ?? "",
                 level: person.level ?? "JUNIOR",
                 commissionRate: String(Number(person.commissionRate).toFixed(1)),
+                previsionCommissionRate: String(Number(person.previsionCommissionRate).toFixed(1)),
                 phone: person.phone ?? "",
                 email: person.email ?? "",
                 photoUrl: person.photoUrl ?? "",
@@ -212,12 +214,22 @@ export default function EditSalespersonModal({ isOpen, onClose, onSuccess, perso
                                     </select>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className={LABEL}>Comisión (%)</label>
+                                    <label className={LABEL}>Comisión Cremación (%)</label>
                                     <div className="relative">
                                         <DollarSign size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
                                         <input type="number" step="0.5" min="0" max="100"
                                             value={formData.commissionRate}
                                             onChange={e => setFormData(p => ({ ...p, commissionRate: e.target.value }))}
+                                            className={`${INPUT} pl-9`} placeholder="5.0" />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className={LABEL}>Comisión Previsión (%)</label>
+                                    <div className="relative">
+                                        <DollarSign size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+                                        <input type="number" step="0.5" min="0" max="100"
+                                            value={formData.previsionCommissionRate}
+                                            onChange={e => setFormData(p => ({ ...p, previsionCommissionRate: e.target.value }))}
                                             className={`${INPUT} pl-9`} placeholder="5.0" />
                                     </div>
                                 </div>

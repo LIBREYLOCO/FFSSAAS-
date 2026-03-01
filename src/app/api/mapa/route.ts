@@ -3,7 +3,9 @@ import prisma from "@/lib/db";
 
 export async function GET() {
     try {
-        const [clinics, orders] = await Promise.all([
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+        const [clinics, orders, drivers] = await Promise.all([
             prisma.veterinaryClinic.findMany({
                 where: {
                     latitude: { not: null },
@@ -20,12 +22,21 @@ export async function GET() {
                     pet: true,
                     clinic: true
                 }
-            })
+            }),
+            prisma.driver.findMany({
+                where: {
+                    isActive: true,
+                    currentLat: { not: null },
+                    currentLng: { not: null },
+                    lastLocationAt: { gte: fiveMinutesAgo },
+                },
+            }),
         ]);
 
         return NextResponse.json({
             clinics,
-            activeOrders: orders
+            activeOrders: orders,
+            activeDrivers: drivers,
         });
     } catch (error) {
         console.error("Map API Error:", error);

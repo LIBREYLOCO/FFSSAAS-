@@ -191,14 +191,17 @@ model ServiceOrder {
 // =========================================================
 
 model Driver {
-  id           String    @id @default(cuid())
-  name         String
-  licensePlate String?
-  phone        String?
-  isActive     Boolean   @default(true)
-  sucursalId   String?
-  sucursal     Sucursal? @relation(fields: [sucursalId], references: [id])
-  routes       Route[]
+  id             String    @id @default(cuid())
+  name           String
+  licensePlate   String?
+  phone          String?
+  isActive       Boolean   @default(true)
+  sucursalId     String?
+  currentLat     Float?
+  currentLng     Float?
+  lastLocationAt DateTime?
+  sucursal       Sucursal? @relation(fields: [sucursalId], references: [id])
+  routes         Route[]
 }
 
 model Route {
@@ -255,6 +258,7 @@ model PrevisionContract {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   payments          Payment[]
+  commissions       Commission[]
   clinicReferral    VeterinaryClinic? @relation(fields: [clinicReferralId], references: [id])
   salesperson       Salesperson?      @relation(fields: [salespersonId], references: [id])
   plan              PrevisionPlan     @relation(fields: [planId], references: [id])
@@ -273,34 +277,54 @@ model Payment {
   updatedAt   DateTime          @updatedAt
   contract    PrevisionContract @relation(fields: [contractId], references: [id])
   notes       String?
+  commission  Commission?
 }
 
 model Salesperson {
   id             String              @id @default(cuid())
   name           String
   level          String
-  commissionRate Decimal
-  sucursalId     String?
+  commissionRate         Decimal
+  previsionCommissionRate Decimal             @default(0)
+  sucursalId              String?
   // Contact info
-  phone          String?
-  email          String?
-  photoUrl       String?
+  phone                   String?
+  email                   String?
+  photoUrl                String?
   // Structured address
-  streetName     String?
-  streetNumber   String?
-  interiorNum    String?
-  neighborhood   String?
-  city           String?
-  state          String?
-  country        String?
-  zipCode        String?
-  latitude       Float?
-  longitude      Float?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-  sucursal       Sucursal?           @relation(fields: [sucursalId], references: [id])
-  contracts      PrevisionContract[]
+  streetName              String?
+  streetNumber            String?
+  interiorNum             String?
+  neighborhood            String?
+  city                    String?
+  state                   String?
+  country                 String?
+  zipCode                 String?
+  latitude                Float?
+  longitude               Float?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  sucursal                Sucursal?           @relation(fields: [sucursalId], references: [id])
+  contracts               PrevisionContract[]
+  commissions             Commission[]
 }
+
+model Commission {
+  id            String            @id @default(cuid())
+  salespersonId String
+  paymentId     String            @unique
+  contractId    String
+  amount        Decimal
+  status        String            @default("PENDING") // PENDING, PAID
+  paidAt        DateTime?
+  notes         String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  salesperson   Salesperson       @relation(fields: [salespersonId], references: [id])
+  payment       Payment           @relation(fields: [paymentId], references: [id])
+  contract      PrevisionContract @relation(fields: [contractId], references: [id])
+}
+
 
 // =========================================================
 // MÓDULO 7: PRODUCTOS (Urnas y Joyería)

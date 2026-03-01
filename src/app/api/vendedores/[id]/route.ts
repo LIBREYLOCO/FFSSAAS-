@@ -11,6 +11,18 @@ export async function GET(
             where: { id },
             include: {
                 sucursal: { select: { nombre: true, codigo: true } },
+                commissions: {
+                    include: {
+                        payment: true,
+                        contract: {
+                            include: {
+                                owner: { select: { name: true } },
+                                plan: { select: { name: true } }
+                            }
+                        }
+                    },
+                    orderBy: { createdAt: 'desc' }
+                },
                 contracts: {
                     include: {
                         owner: { select: { name: true } },
@@ -36,7 +48,7 @@ export async function PATCH(
         const { id } = await params;
         const body = await request.json();
         const {
-            name, level, commissionRate, phone, email, photoUrl,
+            name, level, commissionRate, previsionCommissionRate, phone, email, photoUrl,
             streetName, streetNumber, interiorNum, neighborhood,
             city, state, country, zipCode, latitude, longitude,
         } = body;
@@ -47,6 +59,7 @@ export async function PATCH(
                 ...(name !== undefined && { name }),
                 ...(level !== undefined && { level }),
                 ...(commissionRate !== undefined && { commissionRate: Number(String(commissionRate).replace(',', '.')) || 0 }),
+                ...(previsionCommissionRate !== undefined && { previsionCommissionRate: Number(String(previsionCommissionRate).replace(',', '.')) || 0 }),
                 ...(phone !== undefined && { phone }),
                 ...(email !== undefined && { email }),
                 ...(photoUrl !== undefined && { photoUrl }),

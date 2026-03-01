@@ -12,6 +12,8 @@ import {
   CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 
+import { generateReportPDF } from "@/lib/pdfGenerator";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Sucursal { id: string; nombre: string; codigo: string; }
@@ -106,17 +108,25 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
-function TableCard({ title, count, onExport, children }: {
-  title: string; count: number; onExport: () => void; children: React.ReactNode;
+function TableCard({ title, count, onExport, onExportPDF, children }: {
+  title: string; count: number; onExport: () => void; onExportPDF?: () => void; children: React.ReactNode;
 }) {
   return (
     <div className="glass-card rounded-2xl overflow-hidden border border-white/5">
       <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] bg-white/[0.02]">
         <p className="text-sm font-bold text-white">{count} {title}</p>
-        <button onClick={onExport}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white border border-white/10 transition-all">
-          <Download size={12} /> CSV
-        </button>
+        <div className="flex items-center gap-2">
+          {onExportPDF && (
+            <button onClick={onExportPDF}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-gold-500/10 hover:bg-brand-gold-500/20 text-[10px] font-black uppercase tracking-widest text-brand-gold-400 hover:text-brand-gold-300 border border-brand-gold-500/20 transition-all">
+              <Download size={12} /> PDF
+            </button>
+          )}
+          <button onClick={onExport}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white border border-white/10 transition-all">
+            <Download size={12} /> CSV
+          </button>
+        </div>
       </div>
       <div className="overflow-x-auto">{children}</div>
     </div>
@@ -161,11 +171,13 @@ export default function ReportesPage() {
   const [serviceType,   setServiceType]   = useState("");
   const [hornoId,       setHornoId]       = useState("");
   const [salespersonId, setSalespersonId] = useState("");
+  const [empresa,       setEmpresa]       = useState("Aura Forever Friends");
 
   useEffect(() => {
     fetch("/api/sucursales").then(r => r.ok ? r.json() : []).then(setSucursales).catch(() => {});
     fetch("/api/hornos").then(r => r.ok ? r.json() : []).then(setHornos).catch(() => {});
     fetch("/api/vendedores").then(r => r.ok ? r.json() : []).then(setVendedores).catch(() => {});
+    fetch("/api/system-config").then(r => r.ok ? r.json() : {}).then((d: any) => { if (d.legalName) setEmpresa(d.legalName); }).catch(() => {});
   }, []);
 
   const loadReport = useCallback(async () => {
@@ -338,7 +350,26 @@ export default function ReportesPage() {
                 Folio: o.folio, Estado: STATUS_LABELS[o.status] ?? o.status, Tipo: o.serviceType,
                 Mascota: o.pet?.name, Dueño: o.owner?.name, Sucursal: o.sucursal?.nombre, Total: o.totalCost,
                 Certificado: o.sesionCremacion?.numeroCertificado ?? "", Fecha: fmtDate(o.createdAt),
-              })), `servicios_${from}_${to}.csv`)}>
+              })), `servicios_${from}_${to}.csv`)}
+              onExportPDF={() => generateReportPDF(
+                `Reporte de Servicios — ${from} al ${to}`,
+                [
+                  { key: "Folio", label: "Folio", width: 32 },
+                  { key: "Mascota", label: "Mascota", width: 35 },
+                  { key: "Dueño", label: "Dueño", width: 45 },
+                  { key: "Estado", label: "Estado", width: 40 },
+                  { key: "Tipo", label: "Tipo", width: 30 },
+                  { key: "Sucursal", label: "Sucursal", width: 40 },
+                  { key: "Total", label: "Total", width: 30 },
+                  { key: "Fecha", label: "Fecha", width: 28 },
+                ],
+                (data.orders ?? []).map((o: any) => ({
+                  Folio: o.folio, Mascota: o.pet?.name ?? "—", Dueño: o.owner?.name ?? "—",
+                  Estado: STATUS_LABELS[o.status] ?? o.status, Tipo: o.serviceType === "IMMEDIATE" ? "Inmediata" : "Previsión",
+                  Sucursal: o.sucursal?.nombre ?? "—", Total: fmt$(Number(o.totalCost) || 0), Fecha: fmtDate(o.createdAt),
+                })),
+                `servicios_${from}_${to}.pdf`, empresa
+              )}>
               {(data.orders ?? []).length === 0
                 ? <div className="py-12 text-center text-slate-500 text-sm">Sin resultados.</div>
                 : <table className="w-full text-xs">
@@ -452,7 +483,25 @@ export default function ReportesPage() {
                 Especie: s.serviceOrder?.pet?.species, Dueño: s.serviceOrder?.owner?.name,
                 Inicio: fmtDate(s.fechaInicio), Fin: s.fechaFin ? fmtDate(s.fechaFin) : "En curso",
                 Duración: s.fechaFin ? duracion(s.fechaInicio, s.fechaFin) : "—",
-              })), `cremaciones_${from}_${to}.csv`)}>
+              })), `cremaciones_${from}_${to}.csv`)}
+              onExportPDF={() => generateReportPDF(
+                `Reporte de Cremaciones — ${from} al ${to}`,
+                [
+                  { key: "Certificado", label: "Certificado", width: 45 },
+                  { key: "Mascota", label: "Mascota", width: 38 },
+                  { key: "Horno", label: "Horno", width: 38 },
+                  { key: "Inicio", label: "Inicio", width: 30 },
+                  { key: "Fin", label: "Fin", width: 30 },
+                  { key: "Duración", label: "Duración", width: 28 },
+                ],
+                (data.sesiones ?? []).map((s: any) => ({
+                  Certificado: s.numeroCertificado, Mascota: s.serviceOrder?.pet?.name ?? "—",
+                  Horno: s.horno?.nombre ?? "—", Inicio: fmtDate(s.fechaInicio),
+                  Fin: s.fechaFin ? fmtDate(s.fechaFin) : "En curso",
+                  Duración: s.fechaFin ? duracion(s.fechaInicio, s.fechaFin) : "—",
+                })),
+                `cremaciones_${from}_${to}.pdf`, empresa
+              )}>
               {(data.sesiones ?? []).length === 0
                 ? <div className="py-12 text-center text-slate-500 text-sm">Sin cremaciones.</div>
                 : <table className="w-full text-xs">

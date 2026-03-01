@@ -23,6 +23,8 @@ import {
     Plus,
     Package,
     ChevronRight,
+    Scale,
+    Edit2,
 } from "lucide-react";
 import { BACKGROUNDS } from "@/lib/backgrounds";
 
@@ -183,12 +185,60 @@ export default function ConfigPage() {
     const [newProduct, setNewProduct] = useState({ name: "", price: "", stock: "", category: "ACCESSORY" });
 
     const [pricing, setPricing] = useState({
-        "0-5kg": 2500,
-        "5-15kg": 3500,
-        "15-30kg": 4500,
-        "30kg+": 6000,
         "immediate_surcharge": 1200,
     });
+
+    // Weight-based pricing rules
+    const [weightRules, setWeightRules] = useState<{ minKg: number; maxKg: number; price: number }[]>([]);
+    const [editingRule, setEditingRule] = useState<{ index: number | null; minKg: string; maxKg: string; price: string }>({ index: null, minKg: "", maxKg: "", price: "" });
+    const [savingRules, setSavingRules] = useState(false);
+
+    const fetchWeightRules = async () => {
+        try {
+            const res = await fetch("/api/pricing");
+            if (res.ok) {
+                const data = await res.json();
+                setWeightRules(data.rules || []);
+            }
+        } catch {}
+    };
+
+    const saveWeightRules = async (rules: typeof weightRules) => {
+        setSavingRules(true);
+        try {
+            await fetch("/api/pricing", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ rules }),
+            });
+        } finally {
+            setSavingRules(false);
+        }
+    };
+
+    const handleAddOrUpdateRule = () => {
+        const minKg = parseFloat(editingRule.minKg);
+        const maxKg = parseFloat(editingRule.maxKg);
+        const price = parseInt(editingRule.price);
+        if (isNaN(minKg) || isNaN(maxKg) || isNaN(price) || minKg >= maxKg) return;
+
+        let newRules: typeof weightRules;
+        if (editingRule.index !== null) {
+            newRules = weightRules.map((r, i) => i === editingRule.index ? { minKg, maxKg, price } : r);
+        } else {
+            newRules = [...weightRules, { minKg, maxKg, price }];
+        }
+        newRules = newRules.sort((a, b) => a.minKg - b.minKg);
+        setWeightRules(newRules);
+        saveWeightRules(newRules);
+        setEditingRule({ index: null, minKg: "", maxKg: "", price: "" });
+    };
+
+    const handleDeleteRule = (index: number) => {
+        const newRules = weightRules.filter((_, i) => i !== index);
+        setWeightRules(newRules);
+        saveWeightRules(newRules);
+    };
 
     const [system, setSystem] = useState({
         appName: "Aura Forever Friends",
@@ -273,6 +323,7 @@ export default function ConfigPage() {
         fetchUsers();
         fetchSystemConfig();
         fetchSucursales();
+        fetchWeightRules();
     }, []);
 
     const dashboardItems = [
@@ -627,28 +678,137 @@ export default function ConfigPage() {
 
                             {activeTab === "pricing" && (
                                 <div className="space-y-8">
-                                    <div>
-                                        <h2 className="text-xl font-bold mb-2">Variables de Costo</h2>
-                                        <p className="text-slate-500 text-xs">Ajusta los precios base por peso y recargos por urgencia.</p>
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
+                                                <Scale size={20} className="text-brand-gold-500" />
+                                                Tabulador de Precios por Peso
+                                            </h2>
+                                            <p className="text-slate-500 text-xs">El precio de cremación se asigna automáticamente según el peso de la mascota al crear una orden.</p>
+                                        </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {Object.entries(pricing).map(([key, value]) => (
-                                            <div key={key} className="space-y-2">
-                                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
-                                                    {key.replace('_', ' ')}
-                                                </label>
-                                                <div className="relative">
-                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gold-500 font-bold">$</span>
-                                                    <input
-                                                        type="number"
-                                                        value={value}
-                                                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-8 pr-4 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50 transition-all"
-                                                        onChange={(e) => setPricing({ ...pricing, [key]: parseInt(e.target.value) })}
-                                                    />
-                                                </div>
+                                    {/* Weight Rules Table */}
+                                    <div className="rounded-2xl border border-white/10 overflow-hidden">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-white/5 border-b border-white/10">
+                                                <tr>
+                                                    <th className="text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Rango de Peso</th>
+                                                    <th className="text-right px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Precio</th>
+                                                    <th className="text-right px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {weightRules.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={3} className="text-center py-8 text-slate-500 text-xs italic">
+                                                            No hay rangos configurados. Agrega uno abajo.
+                                                        </td>
+                                                    </tr>
+                                                ) : weightRules.map((rule, i) => (
+                                                    <tr key={i} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
+                                                        <td className="px-5 py-3.5 font-semibold text-slate-300">
+                                                            {rule.minKg} kg — {rule.maxKg >= 9999 ? "más" : `${rule.maxKg} kg`}
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-right font-bold text-brand-gold-400">
+                                                            ${rule.price.toLocaleString()} MXN
+                                                        </td>
+                                                        <td className="px-5 py-3.5 text-right">
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                <button
+                                                                    onClick={() => setEditingRule({ index: i, minKg: String(rule.minKg), maxKg: String(rule.maxKg === 9999 ? "" : rule.maxKg), price: String(rule.price) })}
+                                                                    className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors"
+                                                                >
+                                                                    <Edit2 size={14} />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteRule(i)}
+                                                                    className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-500 hover:text-red-400 transition-colors"
+                                                                >
+                                                                    <Trash2 size={14} />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {/* Add / Edit Rule Form */}
+                                    <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 space-y-4">
+                                        <h3 className="text-xs font-black uppercase tracking-widest text-brand-gold-500">
+                                            {editingRule.index !== null ? "Editar Rango" : "Agregar Rango"}
+                                        </h3>
+                                        <div className="grid grid-cols-3 gap-4">
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Desde (kg)</label>
+                                                <input
+                                                    type="number"
+                                                    min={0}
+                                                    placeholder="0"
+                                                    value={editingRule.minKg}
+                                                    onChange={e => setEditingRule({ ...editingRule, minKg: e.target.value })}
+                                                    className="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50"
+                                                />
                                             </div>
-                                        ))}
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Hasta (kg, vacío = sin límite)</label>
+                                                <input
+                                                    type="number"
+                                                    min={0}
+                                                    placeholder="9999"
+                                                    value={editingRule.maxKg}
+                                                    onChange={e => setEditingRule({ ...editingRule, maxKg: e.target.value })}
+                                                    className="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50"
+                                                />
+                                            </div>
+                                            <div className="space-y-1.5">
+                                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Precio (MXN)</label>
+                                                <input
+                                                    type="number"
+                                                    min={0}
+                                                    placeholder="3500"
+                                                    value={editingRule.price}
+                                                    onChange={e => setEditingRule({ ...editingRule, price: e.target.value })}
+                                                    className="w-full bg-black/40 border border-white/10 rounded-xl py-2.5 px-3 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-3">
+                                            <button
+                                                onClick={handleAddOrUpdateRule}
+                                                disabled={savingRules}
+                                                className="btn-primary flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold disabled:opacity-50"
+                                            >
+                                                <Save size={15} />
+                                                {editingRule.index !== null ? "Actualizar" : "Agregar Rango"}
+                                            </button>
+                                            {editingRule.index !== null && (
+                                                <button
+                                                    onClick={() => setEditingRule({ index: null, minKg: "", maxKg: "", price: "" })}
+                                                    className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 text-sm font-bold border border-white/10 transition-all"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Immediate Surcharge */}
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                                            Recargo por urgencia / Servicio Inmediato
+                                        </label>
+                                        <div className="relative max-w-xs">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-gold-500 font-bold">$</span>
+                                            <input
+                                                type="number"
+                                                value={pricing.immediate_surcharge}
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-8 pr-4 text-sm font-bold focus:outline-none focus:border-brand-gold-500/50 transition-all"
+                                                onChange={(e) => setPricing({ ...pricing, immediate_surcharge: parseInt(e.target.value) })}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             )}

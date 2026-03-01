@@ -15,7 +15,8 @@ export default function RegisterSalespersonModal({ isOpen, onClose, onSuccess }:
     const [formData, setFormData] = useState({
         name: "",
         level: "Junior",
-        commissionRate: 0.1
+        commissionRate: 0.1,
+        previsionCommissionRate: 5.0
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -30,7 +31,7 @@ export default function RegisterSalespersonModal({ isOpen, onClose, onSuccess }:
             if (res.ok) {
                 onSuccess();
                 onClose();
-                setFormData({ name: "", level: "Junior", commissionRate: 0.1 });
+                setFormData({ name: "", level: "Junior", commissionRate: 0.1, previsionCommissionRate: 5.0 });
             }
         } catch (error) {
             console.error(error);
@@ -89,13 +90,26 @@ export default function RegisterSalespersonModal({ isOpen, onClose, onSuccess }:
                                     </select>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Comisión (%)</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Comisión Cremación (%)</label>
                                     <div className="relative">
                                         <input
                                             type="number"
                                             step="0.01"
                                             value={formData.commissionRate}
                                             onChange={e => setFormData({ ...formData, commissionRate: Number(e.target.value) })}
+                                            className="aura-input w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-slate-200 outline-none pr-12"
+                                        />
+                                        <span className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-500 font-bold">%</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Comisión Previsión (%)</label>
+                                    <div className="relative">
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={formData.previsionCommissionRate}
+                                            onChange={e => setFormData({ ...formData, previsionCommissionRate: Number(e.target.value) })}
                                             className="aura-input w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-slate-200 outline-none pr-12"
                                         />
                                         <span className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-500 font-bold">%</span>
