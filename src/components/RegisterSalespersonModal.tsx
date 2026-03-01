@@ -90,7 +90,7 @@ export default function RegisterSalespersonModal({ isOpen, onClose, onSuccess }:
                                     </select>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Comisión Cremación (%)</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Crem. Venta Inmediata (%)</label>
                                     <div className="relative">
                                         <input
                                             type="number"

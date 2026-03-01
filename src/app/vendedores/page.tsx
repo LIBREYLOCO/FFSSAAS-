@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, Plus, Target, Edit2, BarChart2, User } from "lucide-react";
+import { TrendingUp, Plus, Target, Edit2, BarChart2, User, Flame, FileText, DollarSign, Clock } from "lucide-react";
+import { formatMXN } from "@/lib/format";
 import RegisterSalespersonModal from "@/components/RegisterSalespersonModal";
 import EditSalespersonModal from "@/components/EditSalespersonModal";
 import CommissionReportModal from "@/components/CommissionReportModal";
@@ -119,19 +120,47 @@ export default function VendedoresPage() {
                                 </div>
                             )}
 
-                            {/* Stats */}
+                            {/* Commission rates */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Cremación</p>
+                                    <div className="flex items-center justify-center gap-1 mb-1">
+                                        <Flame size={10} className="text-orange-400" />
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase">Crem. Inmediata</p>
+                                    </div>
                                     <p className="text-lg font-black text-brand-gold-500">{Number(person.commissionRate).toFixed(1)}%</p>
                                 </div>
                                 <div className="p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Previsión</p>
+                                    <div className="flex items-center justify-center gap-1 mb-1">
+                                        <FileText size={10} className="text-blue-400" />
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase">Previsión</p>
+                                    </div>
                                     <p className="text-lg font-black text-brand-gold-500">{Number(person.previsionCommissionRate).toFixed(1)}%</p>
                                 </div>
                             </div>
 
-                            <div className="mt-3 p-3 bg-white/5 rounded-2xl border border-white/5 text-center">
+                            {/* Accumulated commission totals */}
+                            <div className="mt-3 grid grid-cols-3 gap-2">
+                                <div className="p-2.5 bg-white/5 rounded-2xl border border-white/5 text-center">
+                                    <div className="flex items-center justify-center gap-1 mb-0.5">
+                                        <DollarSign size={9} className="text-brand-gold-500" />
+                                        <p className="text-[9px] font-bold text-slate-500 uppercase">Generado</p>
+                                    </div>
+                                    <p className="text-sm font-black text-brand-gold-500">{formatMXN(person.totalEarned ?? 0)}</p>
+                                </div>
+                                <div className="p-2.5 bg-emerald-500/10 rounded-2xl border border-emerald-500/10 text-center">
+                                    <p className="text-[9px] font-bold text-emerald-600 uppercase mb-0.5">Pagado</p>
+                                    <p className="text-sm font-black text-emerald-400">{formatMXN(person.totalPaid ?? 0)}</p>
+                                </div>
+                                <div className="p-2.5 bg-brand-gold-500/10 rounded-2xl border border-brand-gold-500/10 text-center">
+                                    <div className="flex items-center justify-center gap-1 mb-0.5">
+                                        <Clock size={9} className="text-brand-gold-400" />
+                                        <p className="text-[9px] font-bold text-brand-gold-600 uppercase">Pendiente</p>
+                                    </div>
+                                    <p className="text-sm font-black text-brand-gold-400">{formatMXN(person.totalPending ?? 0)}</p>
+                                </div>
+                            </div>
+
+                            <div className="mt-2 p-2.5 bg-white/5 rounded-2xl border border-white/5 text-center">
                                 <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Contratos</p>
                                 <p className="text-lg font-black">{person._count?.contracts ?? 0}</p>
                             </div>

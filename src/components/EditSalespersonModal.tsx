@@ -214,7 +214,7 @@ export default function EditSalespersonModal({ isOpen, onClose, onSuccess, perso
                                     </select>
                                 </div>
                                 <div className="space-y-1">
-                                    <label className={LABEL}>Comisión Cremación (%)</label>
+                                    <label className={LABEL}>Crem. Venta Inmediata (%)</label>
                                     <div className="relative">
                                         <DollarSign size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
                                         <input type="number" step="0.5" min="0" max="100"
